@@ -30,11 +30,11 @@ Key Features
 System Architecture
 
 React Frontend
-↓
+      ↓
 FastAPI Backend
-↓
+      ↓
 AI Severity Classification Module
-↓
+      ↓
 MongoDB Atlas
 
 AlertNest follows a backend-centric REST architecture where validation, classification, lifecycle logic, and data management are handled in the backend layer.
