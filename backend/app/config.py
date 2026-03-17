@@ -4,15 +4,20 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Config:
-    """Application configuration"""
-    
-    # Flask
     SECRET_KEY = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
-    
-    # Database
     SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', 'sqlite:///alertnest.db')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    
-    # Server
-    PORT = int(os.getenv('PORT', 5000))
-    HOST = os.getenv('HOST', '0.0.0.0')
+    JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'jwt-secret-key-change-in-production')
+    JWT_ACCESS_TOKEN_EXPIRES = 3600  # 1 hour
+
+class DevelopmentConfig(Config):
+    DEBUG = True
+
+class ProductionConfig(Config):
+    DEBUG = False
+
+config = {
+    'development': DevelopmentConfig,
+    'production': ProductionConfig,
+    'default': DevelopmentConfig
+}
