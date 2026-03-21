@@ -1,30 +1,24 @@
-from app import db
-from datetime import datetime
-from werkzeug.security import generate_password_hash, check_password_hash
+from pydantic import BaseModel, EmailStr
+from typing import Optional
+from enum import Enum
 
-class User(db.Model):
-    __tablename__ = 'users'
+class Role(str, Enum):
+    student = "student"
+    staff = "staff"
+    admin = "admin"
 
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password_hash = db.Column(db.String(256), nullable=False)
-    role = db.Column(db.String(20), nullable=False, default='student')  # student, staff, admin
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+class UserRegister(BaseModel):
+    name: str
+    email: EmailStr
+    password: str
+    role: Role = Role.student
 
-    incidents = db.relationship('Incident', backref='reporter', lazy=True)
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
 
-    def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
-
-    def check_password(self, password):
-        return check_password_hash(self.password_hash, password)
-
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'name': self.name,
-            'email': self.email,
-            'role': self.role,
-            'created_at': self.created_at.isoformat()
-        }
+class UserOut(BaseModel):
+    id: str
+    name: str
+    email: str
+    role: str
