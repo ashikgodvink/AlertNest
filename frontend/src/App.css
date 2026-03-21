@@ -1,65 +1,53 @@
-.App {
-  text-align: center;
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #f9fafb;
+  color: #111;
+}
+
+.home {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  min-height: 100vh;
+  gap: 12px;
+  padding: 24px;
 }
 
-.App-header h1 {
-  margin: 0;
+.home h1 {
   font-size: 3rem;
+  font-weight: 700;
 }
 
-.App-header p {
-  margin: 10px 0;
-  font-size: 1.2rem;
-  color: #61dafb;
+.home .subtitle {
+  font-size: 1.1rem;
+  color: #555;
+  margin-bottom: 24px;
 }
 
-.status {
-  margin: 20px 0;
-  padding: 15px 30px;
-  background-color: #1e2127;
-  border-radius: 8px;
-  font-size: 1rem;
-}
-
-.info {
-  margin-top: 30px;
-  text-align: left;
-  background-color: #1e2127;
+.status-badge {
   padding: 20px 40px;
-  border-radius: 8px;
+  border-radius: 10px;
+  text-align: center;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+  min-width: 320px;
 }
 
-.info p {
-  color: #4caf50;
-  font-weight: bold;
-  margin-bottom: 15px;
+.status-badge.err {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #991b1b;
 }
 
-.info ul {
-  list-style: none;
-  padding: 0;
+.status-badge p {
+  margin-top: 4px;
   font-size: 0.9rem;
-}
-
-.info ul li {
-  padding: 5px 0;
-  color: #61dafb;
-}
-
-.info ul li:before {
-  content: "✓ ";
-  color: #4caf50;
-  font-weight: bold;
-  margin-right: 8px;
 }
