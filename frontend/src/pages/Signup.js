@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { register } from '../services/api';
+import SocialButtons from '../components/SocialButtons';
 
 export default function Signup({ onSwitch }) {
   const [form, setForm] = useState({ name: '', email: '', password: '', role: 'student' });
@@ -27,17 +28,9 @@ export default function Signup({ onSwitch }) {
           <div className="absolute w-56 h-56 bg-teal-500 rounded-3xl rotate-45 -top-10 -left-10 opacity-70" />
           <div className="absolute w-48 h-48 bg-teal-700 rounded-3xl rotate-45 top-16 -left-16 opacity-60" />
           <div className="absolute w-40 h-40 bg-teal-400 rounded-3xl rotate-45 bottom-0 left-8 opacity-50" />
-
           <div className="relative z-10 flex flex-col gap-4 mt-auto mb-auto">
-            <button
-              onClick={onSwitch}
-              className="text-white font-semibold text-sm px-2 opacity-80 hover:opacity-100"
-            >
-              LOGIN
-            </button>
-            <button className="bg-white text-teal-800 font-bold px-6 py-2 rounded-full text-sm shadow">
-              SIGN UP
-            </button>
+            <button onClick={onSwitch} className="text-white font-semibold text-sm px-2 opacity-80 hover:opacity-100">LOGIN</button>
+            <button className="bg-white text-teal-800 font-bold px-6 py-2 rounded-full text-sm shadow">SIGN UP</button>
           </div>
         </div>
 
@@ -56,78 +49,48 @@ export default function Signup({ onSwitch }) {
           <form onSubmit={handleSubmit} className="w-full flex flex-col gap-5">
             <div className="flex items-center border-b border-gray-300 pb-1">
               <svg className="mr-2 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                <circle cx="12" cy="7" r="4"/>
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
               </svg>
-              <input
-                type="text"
-                placeholder="Full Name"
-                value={form.name}
-                onChange={e => setForm({ ...form, name: e.target.value })}
-                required
-                className="flex-1 outline-none text-sm text-gray-700 placeholder-gray-400 bg-transparent"
-              />
+              <input type="text" placeholder="Full Name" value={form.name}
+                onChange={e => setForm({ ...form, name: e.target.value })} required
+                className="flex-1 outline-none text-sm text-gray-700 placeholder-gray-400 bg-transparent" />
             </div>
-
             <div className="flex items-center border-b border-gray-300 pb-1">
               <svg className="mr-2 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18">
-                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                <polyline points="22,6 12,13 2,6"/>
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
               </svg>
-              <input
-                type="email"
-                placeholder="Email"
-                value={form.email}
-                onChange={e => setForm({ ...form, email: e.target.value })}
-                required
-                className="flex-1 outline-none text-sm text-gray-700 placeholder-gray-400 bg-transparent"
-              />
+              <input type="email" placeholder="Email" value={form.email}
+                onChange={e => setForm({ ...form, email: e.target.value })} required
+                className="flex-1 outline-none text-sm text-gray-700 placeholder-gray-400 bg-transparent" />
             </div>
-
             <div className="flex items-center border-b border-gray-300 pb-1">
               <svg className="mr-2 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
               </svg>
-              <input
-                type="password"
-                placeholder="Password"
-                value={form.password}
-                onChange={e => setForm({ ...form, password: e.target.value })}
-                required
-                className="flex-1 outline-none text-sm text-gray-700 placeholder-gray-400 bg-transparent"
-              />
+              <input type="password" placeholder="Password" value={form.password}
+                onChange={e => setForm({ ...form, password: e.target.value })} required
+                className="flex-1 outline-none text-sm text-gray-700 placeholder-gray-400 bg-transparent" />
             </div>
-
             <div className="flex items-center border-b border-gray-300 pb-1">
               <svg className="mr-2 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                <circle cx="9" cy="7" r="4"/>
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
               </svg>
-              <select
-                value={form.role}
-                onChange={e => setForm({ ...form, role: e.target.value })}
-                className="flex-1 outline-none text-sm text-gray-700 bg-transparent"
-              >
+              <select value={form.role} onChange={e => setForm({ ...form, role: e.target.value })}
+                className="flex-1 outline-none text-sm text-gray-700 bg-transparent">
                 <option value="student">Student</option>
                 <option value="staff">Staff</option>
                 <option value="admin">Admin</option>
               </select>
             </div>
-
             <div className="flex justify-end mt-1">
-              <button
-                type="submit"
-                className="bg-teal-600 hover:bg-teal-700 text-white text-sm font-bold px-6 py-2 rounded-full transition"
-              >
-                SIGN UP
-              </button>
+              <button type="submit" className="bg-teal-600 hover:bg-teal-700 text-white text-sm font-bold px-6 py-2 rounded-full transition">SIGN UP</button>
             </div>
           </form>
 
-          <p className="text-xs text-gray-400 mt-6">
+          <SocialButtons onError={setError} label="Sign Up" />
+
+          <p className="text-xs text-gray-400 mt-4">
             Already have an account?{' '}
             <button onClick={onSwitch} className="text-teal-600 font-semibold hover:underline">Login</button>
           </p>
