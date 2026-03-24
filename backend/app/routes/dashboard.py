@@ -7,13 +7,17 @@ router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
 @router.get("/summary")
 async def get_summary(current_user: dict = Depends(get_current_user)):
     db = get_db()
-    total = await db["incidents"].count_documents({})
-    reported = await db["incidents"].count_documents({"status": "reported"})
-    in_progress = await db["incidents"].count_documents({"status": "in_progress"})
-    resolved = await db["incidents"].count_documents({"status": "resolved"})
-    high = await db["incidents"].count_documents({"severity": "high"})
-    medium = await db["incidents"].count_documents({"severity": "medium"})
-    low = await db["incidents"].count_documents({"severity": "low"})
+    all_docs = db.collection("incidents").get()
+    incidents = [d.to_dict() for d in all_docs]
+
+    total = len(incidents)
+    reported = sum(1 for i in incidents if i.get("status") == "reported")
+    in_progress = sum(1 for i in incidents if i.get("status") == "in_progress")
+    resolved = sum(1 for i in incidents if i.get("status") == "resolved")
+    high = sum(1 for i in incidents if i.get("severity") == "high")
+    medium = sum(1 for i in incidents if i.get("severity") == "medium")
+    low = sum(1 for i in incidents if i.get("severity") == "low")
+
     return {
         "total": total,
         "reported": reported,
@@ -28,15 +32,13 @@ async def get_summary(current_user: dict = Depends(get_current_user)):
 @router.get("/recent")
 async def get_recent(current_user: dict = Depends(get_current_user)):
     db = get_db()
-    cursor = db["incidents"].find().sort("_id", -1).limit(5)
-    incidents = []
-    async for i in cursor:
-        incidents.append({
-            "id": str(i["_id"]),
-            "title": i["title"],
-            "category": i["category"],
-            "severity": i["severity"],
-            "status": i["status"],
-            "location": i.get("location", ""),
-        })
+    docs = db.collection("incidents").limit(5).get()
+    incidents = [{
+        "id": d.id,
+        "title": d.to_dict().get("title"),
+        "category": d.to_dict().get("category"),
+        "severity": d.to_dict().get("severity"),
+        "status": d.to_dict().get("status"),
+        "location": d.to_dict().get("location", ""),
+    } for d in docs]
     return {"incidents": incidents}

@@ -8,31 +8,41 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 @router.post("/register", status_code=201)
 async def register(data: UserRegister):
     db = get_db()
-    existing = await db["users"].find_one({"email": data.email})
+    users_ref = db.collection("users")
+    existing = users_ref.where("email", "==", data.email).get()
     if existing:
         raise HTTPException(status_code=409, detail="Email already registered")
 
-    user = {
+    doc_ref = users_ref.document()
+    user_data = {
         "name": data.name,
         "email": data.email,
         "password": hash_password(data.password),
-        "role": data.role
+        "role": data.role,
     }
-    result = await db["users"].insert_one(user)
+    doc_ref.set(user_data)
     return {
         "message": "User registered successfully",
-        "user": UserOut(id=str(result.inserted_id), name=data.name, email=data.email, role=data.role)
+        "user": UserOut(id=doc_ref.id, name=data.name, email=data.email, role=data.role)
     }
 
 @router.post("/login")
 async def login(data: UserLogin):
     db = get_db()
-    user = await db["users"].find_one({"email": data.email})
-    if not user or not verify_password(data.password, user["password"]):
+    users = db.collection("users").where("email", "==", data.email).get()
+    if not users:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    user_doc = users[0]
+    user = user_doc.to_dict()
+    if not verify_password(data.password, user["password"]):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    token = create_token({"user_id": str(user["_id"]), "role": user["role"]})
+    token = create_token({"user_id": user_doc.id, "role": user["role"]})
     return {
         "token": token,
-        "user": UserOut(id=str(user["_id"]), name=user["name"], email=user["email"], role=user["role"])
+        "user": UserOut(id=user_doc.id, name=user["name"], email=user["email"], role=user["role"])
     }
+
+@router.get("/me")
+async def me():
+    return {"message": "use JWT token to identify user"}

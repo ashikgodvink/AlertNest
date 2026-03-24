@@ -1,18 +1,19 @@
-from motor.motor_asyncio import AsyncIOMotorClient
-from app.config import MONGODB_URL
+import firebase_admin
+from firebase_admin import credentials, firestore
+import os
 
-client: AsyncIOMotorClient = None
+_db = None
 
-async def connect_db():
-    global client
-    client = AsyncIOMotorClient(MONGODB_URL)
-    print("Connected to MongoDB")
+def connect_db():
+    global _db
+    cred_path = os.path.join(os.path.dirname(__file__), '..', 'firebase-service-account.json')
+    cred = credentials.Certificate(os.path.abspath(cred_path))
+    firebase_admin.initialize_app(cred)
+    _db = firestore.client()
+    print("Connected to Firestore")
 
-async def close_db():
-    global client
-    if client:
-        client.close()
-        print("MongoDB connection closed")
+def close_db():
+    print("Firestore connection closed")
 
 def get_db():
-    return client["alertnest"]
+    return _db

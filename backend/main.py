@@ -19,11 +19,11 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def startup():
-    await connect_db()
+    connect_db()
 
 @app.on_event("shutdown")
 async def shutdown():
-    await close_db()
+    close_db()
 
 app.include_router(auth_router)
 app.include_router(google_auth_router)

@@ -1,11 +1,9 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, EmailStr
 from app.database import get_db
-from app.utils.auth import create_token, decode_token
 from app.config import JWT_SECRET, JWT_ALGORITHM
 from datetime import datetime, timedelta
-from jose import jwt
-import re
+from jose import jwt, JWTError
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -19,28 +17,21 @@ class ResetRequest(BaseModel):
 @router.post("/forgot-password")
 async def forgot_password(body: ForgotRequest):
     db = get_db()
-    user = await db["users"].find_one({"email": body.email})
-    # Always return success to avoid email enumeration
-    if not user:
+    users = db.collection("users").where("email", "==", body.email).get()
+    if not users:
         return {"message": "If that email exists, a reset token has been sent."}
 
-    # Create a short-lived reset token (15 min)
+    user_doc = users[0]
     payload = {
-        "user_id": str(user["_id"]),
+        "user_id": user_doc.id,
         "purpose": "reset",
         "exp": datetime.utcnow() + timedelta(minutes=15)
     }
     token = jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
-
-    # In production you'd email this. For now return it directly.
-    return {
-        "message": "Password reset token generated.",
-        "reset_token": token  # Remove this in production, send via email instead
-    }
+    return {"message": "Password reset token generated.", "reset_token": token}
 
 @router.post("/reset-password")
 async def reset_password(body: ResetRequest):
-    from jose import JWTError
     try:
         payload = jwt.decode(body.token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
     except JWTError:
@@ -50,10 +41,8 @@ async def reset_password(body: ResetRequest):
         raise HTTPException(status_code=400, detail="Invalid token purpose")
 
     from app.utils.auth import hash_password
-    from bson import ObjectId
     db = get_db()
-    await db["users"].update_one(
-        {"_id": ObjectId(payload["user_id"])},
-        {"$set": {"password": hash_password(body.new_password)}}
+    db.collection("users").document(payload["user_id"]).update(
+        {"password": hash_password(body.new_password)}
     )
     return {"message": "Password reset successfully"}
