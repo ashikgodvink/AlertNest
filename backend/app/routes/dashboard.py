@@ -58,8 +58,9 @@ async def get_recent(current_user: dict = Depends(get_current_user)):
     uid  = current_user["uid"]
 
     if role == "admin":
-        docs = db.collection("incidents").order_by("created_at", direction="DESCENDING").limit(5).get()
-        incidents = [d for d in docs]
+        # Fetch all, sort in Python — avoids needing a Firestore composite index
+        docs = db.collection("incidents").get()
+        all_docs = list(docs)
 
     elif role == "staff":
         own      = db.collection("incidents").where("reported_by", "==", uid).get()
@@ -69,13 +70,14 @@ async def get_recent(current_user: dict = Depends(get_current_user)):
             if d.id not in seen:
                 seen.add(d.id)
                 all_docs.append(d)
-        # sort by created_at descending, take 5
-        all_docs.sort(key=lambda d: d.to_dict().get("created_at", ""), reverse=True)
-        incidents = all_docs[:5]
 
     else:
-        docs = db.collection("incidents").where("reported_by", "==", uid).order_by("created_at", direction="DESCENDING").limit(5).get()
-        incidents = [d for d in docs]
+        docs = db.collection("incidents").where("reported_by", "==", uid).get()
+        all_docs = list(docs)
+
+    # Sort by created_at descending in Python — no composite index needed
+    all_docs.sort(key=lambda d: d.to_dict().get("created_at", ""), reverse=True)
+    recent = all_docs[:5]
 
     return {
         "incidents": [{
@@ -86,5 +88,5 @@ async def get_recent(current_user: dict = Depends(get_current_user)):
             "status": d.to_dict().get("status"),
             "location": d.to_dict().get("location", ""),
             "created_at": d.to_dict().get("created_at"),
-        } for d in incidents]
+        } for d in recent]
     }

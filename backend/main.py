@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import connect_db, close_db
@@ -8,7 +9,15 @@ from app.routes.google_auth import router as google_auth_router
 from app.routes.forgot_password import router as forgot_password_router
 from app.routes.users import router as users_router
 
-app = FastAPI(title="AlertNest API", version="1.0.0")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    connect_db()
+    yield
+    close_db()
+
+
+app = FastAPI(title="AlertNest API", version="1.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -18,20 +27,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.on_event("startup")
-async def startup():
-    connect_db()
-
-@app.on_event("shutdown")
-async def shutdown():
-    close_db()
-
 app.include_router(auth_router)
 app.include_router(incidents_router)
 app.include_router(dashboard_router)
 app.include_router(google_auth_router)
 app.include_router(forgot_password_router)
 app.include_router(users_router)
+
 
 @app.get("/api/ping")
 async def ping():
