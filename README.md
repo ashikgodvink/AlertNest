@@ -1,141 +1,145 @@
 # AlertNest
-Backend-Centric Incident Reporting Platform for Universities & Large Campuses
 
-AlertNest is a centralized, AI-enabled incident management platform designed to improve safety, accountability, and operational efficiency within universities and large institutional campuses.
+Centralized incident reporting and management system for university campuses.
 
-It enables structured incident reporting, intelligent prioritization, real-time tracking, and role-based dashboard management through a scalable backend architecture.
+Students report incidents, staff resolve them, admins oversee everything — with role-based dashboards, real-time status tracking, and auto severity classification.
 
-Universities and large campuses handle daily incidents such as safety concerns, infrastructure faults, equipment failures, sanitation issues, and emergency situations. These issues are often reported through fragmented channels like phone calls, emails, or messaging groups, leading to delayed responses, lack of accountability, and poor coordination across departments.
+---
 
-AlertNest addresses this challenge by providing a centralized, backend-driven incident reporting system with AI-based severity classification and structured lifecycle management.
+## Tech Stack
 
+| Layer | Technology |
+|---|---|
+| Frontend | React.js + Tailwind CSS |
+| Backend | Python + FastAPI |
+| Database | Firebase Firestore |
+| Auth | Firebase Authentication |
+| Server | Uvicorn (ASGI) |
 
+---
 
-Key Features
+## Features
 
-	•	Structured Incident Reporting
-	•	JWT-Based Authentication with Role-Based Access Control
-	•	AI-Based Severity Classification (Low / Medium / High)
-	•	Admin and Department Dashboards
-	•	Incident Lifecycle Management (Reported → In Progress → Resolved)
-	•	Audit Trail and Status Logs
-	•	Analytics and Incident Insights
-	•	Cloud Deployment Ready Architecture
-	
+- Email/password and Google sign-in via Firebase Auth
+- Three roles: Student, Staff, Admin — each with different screens and permissions
+- Incident lifecycle: Reported → In Progress → Resolved
+- Auto severity classification (High / Medium / Low) from description keywords
+- Role-scoped dashboards with stats, resolution rate, and recent activity
+- Admin: assign incidents, manage users, change roles, delete
+- Staff: update status on assigned incidents
+- Student: submit and track own reports, delete unreported ones
+- Search, filter by status/severity, and pagination on incidents list
+- Loading spinners and error/success toasts on all async actions
+- Settings screen with real user info and logout
 
-System Architecture
+---
+
+## Project Structure
 
 ```
-React Frontend
-      ↓
-FastAPI Backend
-      ↓
-AI Severity Classification Module
-      ↓
-MongoDB Atlas
+AlertNest/
+├── backend/
+│   ├── main.py                        # FastAPI app entry, lifespan, CORS, routers
+│   ├── firebase-service-account.json  # Firebase credentials (not in repo)
+│   ├── requirements.txt
+│   ├── .env.example
+│   └── app/
+│       ├── config.py                  # Env config
+│       ├── database.py                # Firestore client init
+│       ├── models/user.py             # Pydantic models
+│       ├── utils/auth.py              # Firebase token verification, get_current_user
+│       └── routes/
+│           ├── auth.py                # /api/auth/sync, /api/auth/me
+│           ├── incidents.py           # Incidents CRUD
+│           ├── dashboard.py           # Summary + recent
+│           ├── users.py               # User management (admin)
+│           ├── google_auth.py         # Google sign-in sync
+│           └── forgot_password.py     # Firebase password reset
+└── frontend/
+    ├── public/
+    └── src/
+        ├── firebase.js                # Firebase SDK init
+        ├── context/AuthContext.js     # Global auth state
+        ├── services/api.js            # Axios instance + all API calls
+        ├── pages/
+        │   ├── Login.js
+        │   ├── Signup.js
+        │   └── Dashboard.js           # Main app — all tabs, role-based
+        └── components/
+            ├── Sidebar.js
+            ├── StatCard.js
+            ├── ProgressChart.js
+            ├── ActivityList.js
+            ├── ForgotPassword.js
+            └── SocialButtons.js
 ```
 
-AlertNest follows a backend-centric REST architecture where validation, classification, lifecycle logic, and data management are handled in the backend layer.
+---
 
+## API Endpoints
 
-Tech Stack
+### Auth
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | /api/auth/sync | Create or update user profile in Firestore |
+| GET | /api/auth/me | Get current user info |
+| POST | /api/auth/google-sync | Sync Google sign-in user to Firestore |
+| POST | /api/auth/forgot-password | Generate Firebase password reset link |
 
-Frontend
+### Incidents
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | /api/incidents | Report a new incident |
+| GET | /api/incidents | Get incidents (role-scoped, supports ?status= ?severity= ?category=) |
+| GET | /api/incidents/{id} | Get single incident |
+| PUT | /api/incidents/{id}/assign | Assign to department (admin only) |
+| PUT | /api/incidents/{id}/status | Update status (admin / assigned staff) |
+| DELETE | /api/incidents/{id} | Delete incident (admin, or student on own reported) |
 
-	•	React.js
-	•	Tailwind CSS
+### Dashboard
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | /api/dashboard/summary | Totals, severity breakdown, resolution rate |
+| GET | /api/dashboard/recent | Last 5 incidents (role-scoped) |
 
-Backend
+### Users
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | /api/users | List all users (admin only) |
+| GET | /api/users/{id} | Get single user (admin only) |
+| PUT | /api/users/{id}/role | Update user role (admin only) |
+| DELETE | /api/users/{id} | Delete user (admin only) |
 
-	•	Python
-	•	FastAPI
-	•	Uvicorn
+---
 
-Database
+## Running Locally
 
-	•	MongoDB Atlas
+**Backend**
+```bash
+cd backend
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8000
+```
 
-Authentication
+> Requires `backend/.env` and `backend/firebase-service-account.json` — copy from `.env.example` and download service account from Firebase console.
 
-	•	JWT (JSON Web Tokens)
-	•	python-jose
-	•	passlib
+**Frontend**
+```bash
+cd frontend
+npm install
+npm start
+```
 
-Deployment
+Open `http://localhost:3000`. Backend runs on `http://localhost:8000`.
 
-	•	Backend hosted on Render
-	•	Frontend hosted on Vercel
+---
 
+## Environment Variables
 
+```env
+GOOGLE_CLIENT_ID=your-google-client-id
+```
 
-How It Works
-
-	1.	User logs in as Student, Staff, or Admin.
-	2.	User submits an incident with category, description, and location.
-	3.	Backend validates request and authenticates the user.
-	4.	AI module classifies severity level.
-	5.	Incident is stored in MongoDB.
-	6.	Admin dashboard updates with the new incident.
-	7.	Admin assigns the incident to the relevant department.
-	8.	Department updates status until resolution.
-	9.	Full audit trail is maintained throughout the lifecycle.
-
-
-
-User Roles
-
-Student / Staff
-
-	•	Submit incidents
-	•	View and track submitted incidents
-
-Admin
-
-	•	View all incidents
-	•	Assign departments
-	•	Update status
-	•	Access analytics dashboard
-
-
-
-API Overview
-
-Authentication
-
-	•	POST /api/register
-	•	POST /api/login
-
-Incident Management
-
-	•	POST /api/incidents
-	•	GET /api/incidents
-	•	GET /api/incidents/{id}
-	•	PUT /api/incidents/{id}/assign
-	•	PUT /api/incidents/{id}/status
-
-Dashboard
-
-	•	GET /api/dashboard/summary
-	•	GET /api/dashboard/analytics
-
-
-
-Testing Strategy
-
-	•	Manual functional testing of APIs
-	•	Role-based access validation
-	•	Incident lifecycle validation
-	•	Concurrent API request handling tests
-	•	Performance monitoring of dashboard endpoints
-
-
-
-Target Market
-
-AlertNest is designed for:
-
-	•	Public and Private Universities
-	•	Engineering and Medical Colleges
-	•	Residential Campuses with Hostels
-	•	Research Institutions
-	•	Large Academic Campuses
+Firebase credentials are handled via the service account JSON file, not env vars.
