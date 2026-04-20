@@ -2,28 +2,32 @@ import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import ForgotPassword from '../components/ForgotPassword';
 import SocialButtons from '../components/SocialButtons';
-import { FaLeaf, FaEye, FaEyeSlash } from 'react-icons/fa';
-import { COLORS } from '../utils/colors';
+import { FaLeaf, FaEye, FaEyeSlash, FaGraduationCap, FaTools, FaCrown } from 'react-icons/fa';
 
-export default function Login({ onSwitch }) {
+export default function Login({ onSwitch, onRoleSelect, roleError }) {
   const { login } = useAuth();
-  const [form, setForm]           = useState({ email: '', password: '' });
-  const [error, setError]         = useState('');
+  const [form, setForm]         = useState({ email: '', password: '' });
+  const [selectedRole, setSelectedRole] = useState('student');
+  const [error, setError]       = useState('');
   const [showForgot, setShowForgot] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading]     = useState(false);
+  const [loading, setLoading]   = useState(false);
 
-  // Using CSS variables directly
-  // Using CSS variables directly
-  // Using CSS variables directly
-  // Using CSS variables directly
-  // Using CSS variables directly
-  // Using CSS variables directly
-  // Using CSS variables directly
+  const ROLES = [
+    { value: 'student', icon: FaGraduationCap, label: 'Student' },
+    { value: 'staff',   icon: FaTools,         label: 'Staff'   },
+    { value: 'admin',   icon: FaCrown,          label: 'Admin'   },
+  ];
+
+  const handleRoleSelect = (role) => {
+    setSelectedRole(role);
+    onRoleSelect?.(role);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(''); setLoading(true);
+    onRoleSelect?.(selectedRole);
     try {
       await login(form.email, form.password);
     } catch (err) {
@@ -40,19 +44,15 @@ export default function Login({ onSwitch }) {
 
       {/* Left branding panel */}
       <div style={{ width: '42%', background: 'var(--bg-dark)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '36px 48px', position: 'relative', overflow: 'hidden' }}>
-        {/* Grid overlay */}
         <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)', backgroundSize: '40px 40px', pointerEvents: 'none' }} />
-        {/* Circle decoration */}
         <div style={{ position: 'absolute', width: '400px', height: '400px', borderRadius: '50%', border: '1px solid rgba(200,135,58,0.1)', top: '50%', left: '10%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
         <div style={{ position: 'absolute', width: '600px', height: '600px', borderRadius: '50%', border: '1px solid rgba(200,135,58,0.06)', top: '50%', left: '-10%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
 
-        {/* Logo */}
         <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{ width: '32px', height: '32px', background: 'var(--gold)', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}><FaLeaf size={16} color="#fff" /></div>
+          <div style={{ width: '32px', height: '32px', background: 'var(--gold)', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FaLeaf size={16} color="#fff" /></div>
           <span style={{ color: 'var(--text)', fontWeight: '700', fontSize: '16px', letterSpacing: '1px' }}>ALERTNEST</span>
         </div>
 
-        {/* Hero text */}
         <div style={{ position: 'relative' }}>
           <h1 style={{ margin: '0 0 4px', fontSize: '52px', fontWeight: '700', color: 'var(--text)', lineHeight: 1.1 }}>Report.</h1>
           <h1 style={{ margin: '0 0 4px', fontSize: '52px', fontWeight: '700', color: 'var(--gold)', lineHeight: 1.1, fontStyle: 'italic' }}>Track.</h1>
@@ -81,16 +81,41 @@ export default function Login({ onSwitch }) {
 
         <div style={{ width: '100%', maxWidth: '360px' }}>
           <h2 style={{ margin: '0 0 6px', fontSize: '26px', fontWeight: '700', color: 'var(--text)' }}>Welcome back</h2>
-          <p style={{ margin: '0 0 28px', fontSize: '13px', color: 'var(--muted)' }}>Sign in to your AlertNest account.</p>
+          <p style={{ margin: '0 0 24px', fontSize: '13px', color: 'var(--muted)' }}>Sign in to your AlertNest account.</p>
 
-          {error && <p style={{ color: '#f87171', fontSize: '12px', marginBottom: '16px', background: 'rgba(248,113,113,0.1)', padding: '10px 14px', borderRadius: '6px' }}>{error}</p>}
+          {(error || roleError) && (
+            <p style={{ color: '#f87171', fontSize: '12px', marginBottom: '16px', background: 'rgba(248,113,113,0.1)', padding: '10px 14px', borderRadius: '6px' }}>
+              {error || roleError}
+            </p>
+          )}
 
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+
+            {/* Role selector */}
+            <div>
+              <label style={label}>Login as</label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                {ROLES.map(r => (
+                  <button key={r.value} type="button" onClick={() => handleRoleSelect(r.value)} style={{
+                    padding: '10px 8px', borderRadius: '8px',
+                    border: selectedRole === r.value ? '1px solid var(--gold)' : '1px solid var(--border)',
+                    background: selectedRole === r.value ? 'rgba(200,135,58,0.12)' : 'var(--bg-input)',
+                    cursor: 'pointer', textAlign: 'center', transition: 'all 0.15s',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
+                  }}>
+                    <r.icon size={16} color={selectedRole === r.value ? 'var(--gold)' : 'var(--muted)'} />
+                    <span style={{ fontSize: '11px', fontWeight: '700', color: selectedRole === r.value ? 'var(--gold)' : 'var(--text)' }}>{r.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div>
               <label style={label}>Email Address</label>
               <input type="email" placeholder="you@example.com" value={form.email}
                 onChange={e => setForm({ ...form, email: e.target.value })} required style={inputSt} />
             </div>
+
             <div>
               <label style={label}>Password</label>
               <div style={{ position: 'relative' }}>
@@ -99,7 +124,7 @@ export default function Login({ onSwitch }) {
                   style={{ ...inputSt, paddingRight: '40px' }} />
                 <button type="button" onClick={() => setShowPassword(p => !p)} style={{
                   position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)',
-                  background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: '14px'
+                  background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)',
                 }}>
                   {showPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
                 </button>
@@ -111,7 +136,7 @@ export default function Login({ onSwitch }) {
               padding: '13px', fontSize: '13px', fontWeight: '700', cursor: 'pointer',
               letterSpacing: '0.8px', opacity: loading ? 0.7 : 1, marginTop: '4px',
             }}>
-              {loading ? 'SIGNING IN...' : 'SIGN IN'}
+              {loading ? 'SIGNING IN...' : `SIGN IN AS ${selectedRole.toUpperCase()}`}
             </button>
           </form>
 

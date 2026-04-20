@@ -43,15 +43,26 @@ function Home({ onLogin, onSignup }) {
 }
 
 function AppContent() {
-  const { user, loading } = useAuth();
-  const [page, setPage] = useState('home'); // home | login | signup
+  const { user, loading, logout } = useAuth();
+  const [page, setPage] = useState('home');
+  const [loginRole, setLoginRole] = useState(null);
+  const [roleError, setRoleError] = useState('');
+
+  // When user logs in, check if their actual role matches what they selected
+  useEffect(() => {
+    if (user && loginRole && user.role !== loginRole) {
+      setRoleError(`This account is registered as "${user.role}". Please select the correct role.`);
+      logout();
+      setLoginRole(null);
+    }
+  }, [user, loginRole]);
 
   if (loading) return <p className="text-center mt-20" style={{ color: 'var(--muted)' }}>Loading...</p>;
   if (user) return <Dashboard />;
 
-  if (page === 'login') return <Login onSwitch={() => setPage('signup')} />;
+  if (page === 'login') return <Login onSwitch={() => { setPage('signup'); setRoleError(''); }} onRoleSelect={setLoginRole} roleError={roleError} />;
   if (page === 'signup') return <Signup onSwitch={() => setPage('login')} />;
-  return <Home onLogin={() => setPage('login')} onSignup={() => setPage('signup')} />;
+  return <Home onLogin={() => { setPage('login'); setRoleError(''); }} onSignup={() => setPage('signup')} />;
 }
 
 export default function App() {
