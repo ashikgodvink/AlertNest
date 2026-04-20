@@ -3,6 +3,12 @@ import { useAuth } from '../context/AuthContext';
 import SocialButtons from '../components/SocialButtons';
 import { FaLeaf, FaGraduationCap, FaTools, FaCrown, FaEye, FaEyeSlash } from 'react-icons/fa';
 
+const DOMAIN_MAP = {
+  student: '@student.alertnest.edu',
+  staff:   '@staff.alertnest.edu',
+  admin:   '@admin.alertnest.edu',
+};
+
 export default function Signup({ onSwitch }) {
   const { register } = useAuth();
   const [form, setForm]       = useState({ name: '', email: '', password: '', role: 'student' });
@@ -20,6 +26,15 @@ export default function Signup({ onSwitch }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(''); setSuccess(''); setLoading(true);
+
+    // Validate email domain matches selected role
+    const expectedDomain = DOMAIN_MAP[form.role];
+    if (!form.email.toLowerCase().endsWith(expectedDomain)) {
+      setError(`${form.role.charAt(0).toUpperCase() + form.role.slice(1)} accounts require an institutional email ending with ${expectedDomain}`);
+      setLoading(false);
+      return;
+    }
+
     try {
       await register(form.name, form.email, form.password, form.role);
       setSuccess('Account created! Logging you in...');
