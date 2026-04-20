@@ -1,4 +1,4 @@
-import { FaTimes, FaMapMarkerAlt } from 'react-icons/fa';
+import { FaTimes, FaMapMarkerAlt, FaVideo } from 'react-icons/fa';
 import Comments from './Comments';
 import Attachments from './Attachments';
 
@@ -163,7 +163,7 @@ export default function IncidentDetailModal({ incident, onClose, onToast }) {
                         border: '1px solid var(--border)', background: 'var(--bg-dark)',
                         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '6px',
                       }}>
-                        <span style={{ fontSize: '28px' }}>🎥</span>
+                        <FaVideo size={28} style={{ color: 'var(--gold)' }} />
                         <span style={{ fontSize: '9px', color: 'var(--muted)', textAlign: 'center', padding: '0 6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '90px' }}>{m.filename}</span>
                       </div>
                     )}

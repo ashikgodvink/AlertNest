@@ -12,7 +12,7 @@ import Toast from '../components/Toast';
 import ConfirmModal from '../components/ConfirmModal';
 import IncidentDetailModal from '../components/IncidentDetailModal';
 import Profile from './Profile';
-import { FaClipboardList, FaSync, FaCheckCircle, FaTrash, FaSearch, FaMapMarkerAlt, FaDownload, FaFilter, FaSave, FaTimes, FaSort } from 'react-icons/fa';
+import { FaClipboardList, FaSync, FaCheckCircle, FaTrash, FaSearch, FaMapMarkerAlt, FaFilter, FaSave, FaTimes, FaSort, FaImage, FaVideo, FaPlus } from 'react-icons/fa';
 import { COLORS } from '../utils/colors';
 
 const PAGE_SIZE = 8;
@@ -1078,7 +1078,8 @@ export default function Dashboard() {
                     onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--gold)'; e.currentTarget.style.color = 'var(--gold)'; }}
                     onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--muted)'; }}
                   >
-                    <span style={{ fontSize: '22px' }}>📎</span>
+                    <FaImage size={18} />
+                    <FaVideo size={18} />
                     <span>Click to attach photos or videos</span>
                     <input
                       type="file"
@@ -1109,7 +1110,7 @@ export default function Dashboard() {
                             />
                           ) : (
                             <div style={{ width: '80px', height: '80px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                              <span style={{ fontSize: '24px' }}>🎥</span>
+                              <FaVideo size={24} style={{ color: 'var(--gold)' }} />
                               <span style={{ fontSize: '9px', color: 'var(--muted)', textAlign: 'center', padding: '0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '76px' }}>{f.name}</span>
                             </div>
                           )}
