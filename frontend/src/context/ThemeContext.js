@@ -4,16 +4,21 @@ const ThemeContext = createContext();
 
 export function ThemeProvider({ children }) {
   const [theme, setTheme] = useState(() => {
-    // Get saved theme from localStorage or default to 'dark'
+    // Get saved theme from localStorage
     const saved = localStorage.getItem('alertnest-theme');
-    return saved || 'dark';
+    if (saved) return saved;
+    
+    // Auto-detect system preference on first visit
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+      return 'light';
+    }
+    return 'dark';
   });
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     // Save theme to localStorage
     localStorage.setItem('alertnest-theme', theme);
-    console.log('Theme changed to:', theme);
   }, [theme]);
 
   const toggle = () => setTheme(t => (t === 'dark' ? 'light' : 'dark'));
