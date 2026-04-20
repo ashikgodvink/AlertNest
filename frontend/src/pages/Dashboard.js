@@ -580,48 +580,233 @@ export default function Dashboard() {
           {/* ── DASHBOARD ── */}
           {active === 'Dashboard' && (
             <>
-              <div style={{ marginBottom: '28px', paddingBottom: '20px', borderBottom: `1px solid var(--border)` }}>
-                <p style={{ margin: '0 0 6px', fontSize: '10px', fontWeight: '600', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--muted)' }}>
-                  {role === 'admin' ? 'System Overview' : role === 'staff' ? 'Staff Overview' : 'My Overview'}
-                </p>
-                <h2 style={{ margin: 0, fontSize: '28px', fontWeight: '400', color: 'var(--text)', letterSpacing: '0.05em', fontFamily: "'Oswald', sans-serif" }}>
-                  {role === 'admin' ? 'All Incidents' : role === 'staff' ? 'Assigned Work' : `Welcome, ${user?.name?.split(' ')[0] || 'there'}`}
-                </h2>
-              </div>
-
-              {loadingDash ? <LoadingSkeleton type="stat" /> : (
+              {/* ── ADMIN DASHBOARD ── */}
+              {role === 'admin' && (
                 <>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1px', background: 'var(--border)', border: `1px solid var(--border)`, marginBottom: '24px' }}>
-                    <StatCard label="Total Incidents" value={summary?.total}       subtitle="All time" icon={<FaClipboardList size={16} />} />
-                    <StatCard label="In Progress"     value={summary?.in_progress} subtitle="Active now" icon={<FaSync size={16} />} trend="down" />
-                    <StatCard label="Resolved Cases"  value={summary?.resolved}    subtitle="Completed" icon={<FaCheckCircle size={16} />} />
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1px', background: 'var(--border)', border: `1px solid var(--border)` }}>
-                    <div style={{ background: 'var(--bg-card)', padding: '22px' }}>
-                      <p style={{ margin: '0 0 16px', fontSize: '10px', fontWeight: '600', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--muted)' }}>Recent Activity</p>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', background: 'var(--border)' }}>
-                        {recent.length === 0 && <p style={{ fontSize: '12px', color: 'var(--muted)', margin: 0, padding: '12px', background: 'var(--bg-dark)' }}>No incidents yet</p>}
-                        {recent.map((inc, idx) => (
-                          <button key={inc.id} onClick={() => setSelectedIdx(idx)} style={{
-                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                            padding: '12px 14px', border: 'none', cursor: 'pointer',
-                            background: selectedIdx === idx ? 'rgba(200,135,58,0.1)' : 'var(--bg-dark)',
-                            color: selectedIdx === idx ? 'var(--gold)' : 'var(--text)',
-                            transition: 'background 0.15s',
-                            textAlign: 'left',
-                            width: '100%',
-                          }}>
-                            <div>
-                              <p style={{ margin: 0, fontSize: '12px', fontWeight: '600', lineHeight: 1.4 }}>{inc.title}</p>
-                              <p style={{ margin: '2px 0 0', fontSize: '11px', opacity: 0.7 }}>{inc.category} {inc.created_at && `· ${timeAgo(inc.created_at)}`}</p>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
+                  <div style={{ marginBottom: '28px', paddingBottom: '20px', borderBottom: `1px solid var(--border)`, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                    <div>
+                      <p style={{ margin: '0 0 6px', fontSize: '10px', fontWeight: '600', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--muted)' }}>System Overview</p>
+                      <h2 style={{ margin: 0, fontSize: '28px', fontWeight: '400', color: 'var(--text)', letterSpacing: '0.05em', fontFamily: "'Oswald', sans-serif" }}>Admin Control Panel</h2>
                     </div>
-                    <ProgressChart pct={summary?.resolution_rate ?? 0} onViewAll={() => setActive('Incidents')} />
-                    <ActivityList items={activityItems} onViewAll={() => setActive('Incidents')} />
+                    <button onClick={() => setActive('Users')} style={{ ...btnGold, padding: '8px 18px', fontSize: '11px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      Manage Users
+                    </button>
                   </div>
+                  {loadingDash ? <LoadingSkeleton type="stat" /> : (
+                    <>
+                      {/* Admin stats - system wide */}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1px', background: 'var(--border)', border: `1px solid var(--border)`, marginBottom: '24px' }}>
+                        <StatCard label="Total Incidents" value={summary?.total} subtitle="System wide" icon={<FaClipboardList size={16} />} />
+                        <StatCard label="Reported" value={summary?.reported} subtitle="Awaiting action" icon={<FaSync size={16} />} />
+                        <StatCard label="In Progress" value={summary?.in_progress} subtitle="Being handled" icon={<FaSync size={16} />} trend="down" />
+                        <StatCard label="Resolved" value={summary?.resolved} subtitle="Completed" icon={<FaCheckCircle size={16} />} />
+                      </div>
+                      {/* Admin bottom row */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1px', background: 'var(--border)', border: `1px solid var(--border)` }}>
+                        <div style={{ background: 'var(--bg-card)', padding: '22px' }}>
+                          <p style={{ margin: '0 0 16px', fontSize: '10px', fontWeight: '600', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--muted)' }}>Recent Incidents</p>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', background: 'var(--border)' }}>
+                            {recent.length === 0 && <p style={{ fontSize: '12px', color: 'var(--muted)', margin: 0, padding: '12px', background: 'var(--bg-dark)' }}>No incidents yet</p>}
+                            {recent.map((inc, idx) => (
+                              <button key={inc.id} onClick={() => { setActive('Incidents'); }} style={{
+                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                padding: '12px 14px', border: 'none', cursor: 'pointer',
+                                background: 'var(--bg-dark)', color: 'var(--text)',
+                                transition: 'background 0.15s', textAlign: 'left', width: '100%',
+                              }}
+                                onMouseEnter={e => e.currentTarget.style.background = 'rgba(200,135,58,0.08)'}
+                                onMouseLeave={e => e.currentTarget.style.background = 'var(--bg-dark)'}
+                              >
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <p style={{ margin: 0, fontSize: '12px', fontWeight: '600', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{inc.title}</p>
+                                  <p style={{ margin: '2px 0 0', fontSize: '11px', opacity: 0.7 }}>{inc.category} · {timeAgo(inc.created_at)}</p>
+                                </div>
+                                <span style={{ fontSize: '9px', fontWeight: '600', padding: '2px 7px', borderRadius: '10px', background: inc.severity === 'high' ? 'rgba(248,113,113,0.15)' : inc.severity === 'medium' ? 'rgba(200,135,58,0.15)' : 'rgba(110,231,183,0.15)', color: inc.severity === 'high' ? '#f87171' : inc.severity === 'medium' ? '#c8873a' : '#6ee7b7', marginLeft: '8px', flexShrink: 0 }}>{inc.severity}</span>
+                              </button>
+                            ))}
+                          </div>
+                          <button onClick={() => setActive('Incidents')} style={{ width: '100%', marginTop: '1px', padding: '10px', background: 'var(--bg-dark)', border: 'none', color: 'var(--gold)', fontSize: '11px', cursor: 'pointer', letterSpacing: '0.08em' }}>
+                            View All Incidents →
+                          </button>
+                        </div>
+                        <ProgressChart pct={summary?.resolution_rate ?? 0} onViewAll={() => setActive('Incidents')} />
+                        <div style={{ background: 'var(--bg-card)', padding: '22px' }}>
+                          <p style={{ margin: '0 0 16px', fontSize: '10px', fontWeight: '600', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--muted)' }}>Quick Actions</p>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            {[
+                              { label: 'View All Incidents', action: () => setActive('Incidents'), color: 'var(--gold)' },
+                              { label: 'Manage Users', action: () => setActive('Users'), color: '#6ee7b7' },
+                              { label: 'Settings', action: () => setActive('Settings'), color: '#93c5fd' },
+                            ].map(a => (
+                              <button key={a.label} onClick={a.action} style={{
+                                padding: '12px 16px', background: 'var(--bg-dark)', border: `1px solid var(--border)`,
+                                borderRadius: '8px', color: a.color, fontSize: '12px', fontWeight: '600',
+                                cursor: 'pointer', textAlign: 'left', letterSpacing: '0.04em',
+                                transition: 'border-color 0.2s',
+                              }}
+                                onMouseEnter={e => e.currentTarget.style.borderColor = a.color}
+                                onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
+                              >{a.label} →</button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
+
+              {/* ── STAFF DASHBOARD ── */}
+              {role === 'staff' && (
+                <>
+                  <div style={{ marginBottom: '28px', paddingBottom: '20px', borderBottom: `1px solid var(--border)` }}>
+                    <p style={{ margin: '0 0 6px', fontSize: '10px', fontWeight: '600', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--muted)' }}>Staff Overview</p>
+                    <h2 style={{ margin: 0, fontSize: '28px', fontWeight: '400', color: 'var(--text)', letterSpacing: '0.05em', fontFamily: "'Oswald', sans-serif" }}>
+                      Welcome, {user?.name?.split(' ')[0] || 'Staff'}
+                    </h2>
+                  </div>
+                  {loadingDash ? <LoadingSkeleton type="stat" /> : (
+                    <>
+                      {/* Staff stats - their assigned work */}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1px', background: 'var(--border)', border: `1px solid var(--border)`, marginBottom: '24px' }}>
+                        <StatCard label="Assigned to Me" value={summary?.in_progress} subtitle="Need attention" icon={<FaSync size={16} />} trend="down" />
+                        <StatCard label="Resolved by Me" value={summary?.resolved} subtitle="Completed" icon={<FaCheckCircle size={16} />} />
+                        <StatCard label="Total in System" value={summary?.total} subtitle="All incidents" icon={<FaClipboardList size={16} />} />
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1px', background: 'var(--border)', border: `1px solid var(--border)` }}>
+                        {/* Assigned incidents quick view */}
+                        <div style={{ background: 'var(--bg-card)', padding: '22px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                            <p style={{ margin: 0, fontSize: '10px', fontWeight: '600', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--muted)' }}>Assigned to Me</p>
+                            <button onClick={() => setActive('Incidents')} style={{ background: 'transparent', border: 'none', color: 'var(--gold)', fontSize: '11px', cursor: 'pointer' }}>View All →</button>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', background: 'var(--border)' }}>
+                            {recent.filter(i => i.assigned_to === user?.id).length === 0
+                              ? <p style={{ fontSize: '12px', color: 'var(--muted)', margin: 0, padding: '12px', background: 'var(--bg-dark)' }}>No incidents assigned yet</p>
+                              : recent.filter(i => i.assigned_to === user?.id).map(inc => (
+                                <div key={inc.id} style={{ padding: '12px 14px', background: 'var(--bg-dark)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <div>
+                                    <p style={{ margin: 0, fontSize: '12px', fontWeight: '600', color: 'var(--text)' }}>{inc.title}</p>
+                                    <p style={{ margin: '2px 0 0', fontSize: '11px', color: 'var(--muted)' }}>{inc.location} · {timeAgo(inc.created_at)}</p>
+                                  </div>
+                                  <span style={{ fontSize: '9px', fontWeight: '600', padding: '2px 7px', borderRadius: '10px', background: 'rgba(200,135,58,0.15)', color: '#c8873a' }}>{inc.status?.replace('_', ' ')}</span>
+                                </div>
+                              ))
+                            }
+                            {/* Show all recent if none assigned */}
+                            {recent.filter(i => i.assigned_to === user?.id).length === 0 && recent.slice(0, 4).map(inc => (
+                              <div key={inc.id} style={{ padding: '12px 14px', background: 'var(--bg-dark)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div>
+                                  <p style={{ margin: 0, fontSize: '12px', fontWeight: '600', color: 'var(--text)' }}>{inc.title}</p>
+                                  <p style={{ margin: '2px 0 0', fontSize: '11px', color: 'var(--muted)' }}>{inc.category} · {timeAgo(inc.created_at)}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        {/* Staff quick actions */}
+                        <div style={{ background: 'var(--bg-card)', padding: '22px' }}>
+                          <p style={{ margin: '0 0 16px', fontSize: '10px', fontWeight: '600', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--muted)' }}>Quick Actions</p>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            {[
+                              { label: 'My Assigned Work', action: () => setActive('Incidents'), color: '#6ee7b7' },
+                              { label: 'Settings', action: () => setActive('Settings'), color: '#93c5fd' },
+                            ].map(a => (
+                              <button key={a.label} onClick={a.action} style={{
+                                padding: '12px 16px', background: 'var(--bg-dark)', border: `1px solid var(--border)`,
+                                borderRadius: '8px', color: a.color, fontSize: '12px', fontWeight: '600',
+                                cursor: 'pointer', textAlign: 'left', letterSpacing: '0.04em',
+                                transition: 'border-color 0.2s',
+                              }}
+                                onMouseEnter={e => e.currentTarget.style.borderColor = a.color}
+                                onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
+                              >{a.label} →</button>
+                            ))}
+                          </div>
+                          <div style={{ marginTop: '20px', padding: '14px', background: 'rgba(110,231,183,0.06)', border: '1px solid rgba(110,231,183,0.15)', borderRadius: '8px' }}>
+                            <p style={{ margin: '0 0 4px', fontSize: '10px', fontWeight: '600', color: '#6ee7b7', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Your Role</p>
+                            <p style={{ margin: 0, fontSize: '12px', color: 'var(--muted)', lineHeight: 1.5 }}>You can update status of incidents assigned to you. Contact admin to get incidents assigned.</p>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
+
+              {/* ── STUDENT DASHBOARD ── */}
+              {role === 'student' && (
+                <>
+                  <div style={{ marginBottom: '28px', paddingBottom: '20px', borderBottom: `1px solid var(--border)`, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                    <div>
+                      <p style={{ margin: '0 0 6px', fontSize: '10px', fontWeight: '600', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--muted)' }}>My Overview</p>
+                      <h2 style={{ margin: 0, fontSize: '28px', fontWeight: '400', color: 'var(--text)', letterSpacing: '0.05em', fontFamily: "'Oswald', sans-serif" }}>
+                        Welcome, {user?.name?.split(' ')[0] || 'there'}
+                      </h2>
+                    </div>
+                    <button onClick={() => setActive('Reports')} style={{ ...btnGold, padding: '10px 22px', fontSize: '11px', borderRadius: '8px' }}>
+                      + Report Incident
+                    </button>
+                  </div>
+                  {loadingDash ? <LoadingSkeleton type="stat" /> : (
+                    <>
+                      {/* Student stats - their own reports only */}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1px', background: 'var(--border)', border: `1px solid var(--border)`, marginBottom: '24px' }}>
+                        <StatCard label="My Reports" value={summary?.total} subtitle="Total submitted" icon={<FaClipboardList size={16} />} />
+                        <StatCard label="Being Handled" value={summary?.in_progress} subtitle="In progress" icon={<FaSync size={16} />} />
+                        <StatCard label="Resolved" value={summary?.resolved} subtitle="Completed" icon={<FaCheckCircle size={16} />} />
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1px', background: 'var(--border)', border: `1px solid var(--border)` }}>
+                        {/* Student recent reports */}
+                        <div style={{ background: 'var(--bg-card)', padding: '22px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                            <p style={{ margin: 0, fontSize: '10px', fontWeight: '600', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--muted)' }}>My Recent Reports</p>
+                            <button onClick={() => setActive('Incidents')} style={{ background: 'transparent', border: 'none', color: 'var(--gold)', fontSize: '11px', cursor: 'pointer' }}>View All →</button>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', background: 'var(--border)' }}>
+                            {recent.length === 0
+                              ? <p style={{ fontSize: '12px', color: 'var(--muted)', margin: 0, padding: '12px', background: 'var(--bg-dark)' }}>No reports yet. Report your first incident!</p>
+                              : recent.slice(0, 5).map(inc => (
+                                <div key={inc.id} style={{ padding: '12px 14px', background: 'var(--bg-dark)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    <p style={{ margin: 0, fontSize: '12px', fontWeight: '600', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{inc.title}</p>
+                                    <p style={{ margin: '2px 0 0', fontSize: '11px', color: 'var(--muted)' }}>{inc.category} · {timeAgo(inc.created_at)}</p>
+                                    {inc.assigned_to && (
+                                      <p style={{ margin: '2px 0 0', fontSize: '10px', color: 'var(--gold)' }}>Assigned to staff</p>
+                                    )}
+                                  </div>
+                                  <span style={{
+                                    fontSize: '9px', fontWeight: '600', padding: '2px 7px', borderRadius: '10px', flexShrink: 0,
+                                    background: inc.status === 'resolved' ? 'rgba(110,231,183,0.15)' : inc.status === 'in_progress' ? 'rgba(200,135,58,0.15)' : 'rgba(147,197,253,0.15)',
+                                    color: inc.status === 'resolved' ? '#6ee7b7' : inc.status === 'in_progress' ? '#c8873a' : '#93c5fd',
+                                  }}>{inc.status?.replace('_', ' ')}</span>
+                                </div>
+                              ))
+                            }
+                          </div>
+                        </div>
+                        {/* Student info panel */}
+                        <div style={{ background: 'var(--bg-card)', padding: '22px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                          <p style={{ margin: 0, fontSize: '10px', fontWeight: '600', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--muted)' }}>How It Works</p>
+                          {[
+                            { step: '1', text: 'Report an incident with details and photos', color: '#93c5fd' },
+                            { step: '2', text: 'Admin reviews and assigns it to staff', color: '#c8873a' },
+                            { step: '3', text: 'Staff resolves the issue', color: '#6ee7b7' },
+                          ].map(s => (
+                            <div key={s.step} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                              <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: `${s.color}20`, border: `1px solid ${s.color}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                <span style={{ fontSize: '10px', fontWeight: '700', color: s.color }}>{s.step}</span>
+                              </div>
+                              <p style={{ margin: 0, fontSize: '11px', color: 'var(--muted)', lineHeight: 1.5 }}>{s.text}</p>
+                            </div>
+                          ))}
+                          <button onClick={() => setActive('Reports')} style={{ ...btnGold, padding: '10px', fontSize: '11px', borderRadius: '8px', marginTop: '8px', textAlign: 'center' }}>
+                            + Report New Incident
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </>
               )}
             </>
