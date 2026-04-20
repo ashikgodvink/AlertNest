@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
@@ -15,8 +16,12 @@ function StatusBadge() {
       .catch(() => { setStatus('unreachable'); setOk(false); });
   }, []);
 
+  const bgColor = ok === true ? 'rgba(110,231,183,0.15)' : ok === false ? 'rgba(248,113,113,0.15)' : 'rgba(200,135,58,0.1)';
+  const borderColor = ok === true ? 'rgba(110,231,183,0.3)' : ok === false ? 'rgba(248,113,113,0.3)' : 'var(--border)';
+  const textColor = ok === true ? '#6ee7b7' : ok === false ? '#f87171' : 'var(--muted)';
+
   return (
-    <div className={`mt-6 px-10 py-4 rounded-xl text-center min-w-72 ${ok === true ? 'bg-green-50 border border-green-200 text-green-800' : ok === false ? 'bg-red-50 border border-red-200 text-red-800' : 'bg-gray-50 border border-gray-200 text-gray-500'}`}>
+    <div className="mt-6 px-10 py-4 rounded-xl text-center min-w-72" style={{ background: bgColor, border: `1px solid ${borderColor}`, color: textColor }}>
       <p className="font-semibold">Backend Status: {status}</p>
       <p className="text-sm mt-1">{ok === true ? 'API is running' : ok === false ? 'Cannot reach backend' : 'Connecting...'}</p>
     </div>
@@ -25,13 +30,13 @@ function StatusBadge() {
 
 function Home({ onLogin, onSignup }) {
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center gap-4">
-      <h1 className="text-5xl font-bold text-teal-700">AlertNest</h1>
-      <p className="text-gray-500 text-lg">AI-Powered Incident Alert Platform</p>
+    <div className="min-h-screen flex flex-col items-center justify-center gap-4" style={{ background: 'var(--bg-dark)' }}>
+      <h1 className="text-5xl font-bold" style={{ color: 'var(--gold)' }}>AlertNest</h1>
+      <p className="text-lg" style={{ color: 'var(--muted)' }}>AI-Powered Incident Alert Platform</p>
       <StatusBadge />
       <div className="flex gap-4 mt-6">
-        <button onClick={onLogin} className="bg-teal-600 hover:bg-teal-700 text-white px-8 py-2 rounded-full font-semibold transition">Login</button>
-        <button onClick={onSignup} className="border border-teal-600 text-teal-600 hover:bg-teal-50 px-8 py-2 rounded-full font-semibold transition">Sign Up</button>
+        <button onClick={onLogin} className="px-8 py-2 rounded-full font-semibold transition" style={{ background: 'var(--gold)', color: '#fff' }}>Login</button>
+        <button onClick={onSignup} className="px-8 py-2 rounded-full font-semibold transition" style={{ border: '1px solid var(--gold)', color: 'var(--gold)', background: 'transparent' }}>Sign Up</button>
       </div>
     </div>
   );
@@ -41,7 +46,7 @@ function AppContent() {
   const { user, loading } = useAuth();
   const [page, setPage] = useState('home'); // home | login | signup
 
-  if (loading) return <p className="text-center mt-20 text-gray-400">Loading...</p>;
+  if (loading) return <p className="text-center mt-20" style={{ color: 'var(--muted)' }}>Loading...</p>;
   if (user) return <Dashboard />;
 
   if (page === 'login') return <Login onSwitch={() => setPage('signup')} />;
@@ -51,8 +56,10 @@ function AppContent() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

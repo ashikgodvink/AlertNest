@@ -74,7 +74,7 @@ export default function Signup({ onSwitch }) {
       <div style={{ flex: 1, background: 'var(--bg-card)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px', overflowY: 'auto' }}>
 
         {/* Tab switcher */}
-        <div style={{ display: 'flex', background: 'var(--bg-input)', borderRadius: '8px', padding: '4px', marginBottom: '32px', width: '100%', maxWidth: '360px' }}>
+        <div style={{ display: 'flex', background: '#0a2218', borderRadius: '8px', padding: '4px', marginBottom: '32px', width: '100%', maxWidth: '360px' }}>
           <button onClick={onSwitch} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: 'none', cursor: 'pointer', background: 'transparent', color: 'var(--muted)', fontWeight: '600', fontSize: '13px', letterSpacing: '0.5px' }}>SIGN IN</button>
           <button style={{ flex: 1, padding: '10px', borderRadius: '6px', border: 'none', cursor: 'default', background: 'var(--gold)', color: '#fff', fontWeight: '700', fontSize: '13px', letterSpacing: '0.5px' }}>SIGN UP</button>
         </div>
@@ -94,14 +94,14 @@ export default function Signup({ onSwitch }) {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
                 {ROLES.map(r => (
                   <button key={r.value} type="button" onClick={() => setForm({ ...form, role: r.value })} style={{
-                    padding: '12px 8px', borderRadius: '8px', border: form.role === r.value ? '1px solid var(--gold)' : '1px solid var(--border)',
-                    background: form.role === r.value ? 'rgba(200,135,58,0.12)' : 'var(--bg-input)',
+                    padding: '12px 8px', borderRadius: '8px', border: `1px solid ${form.role === r.value ? GOLD : BORDER}`,
+                    background: form.role === r.value ? 'rgba(200,135,58,0.12)' : INPUT_BG,
                     cursor: 'pointer', textAlign: 'center', transition: 'all 0.15s',
                   }}>
                   <div style={{ marginBottom: '4px', display: 'flex', justifyContent: 'center' }}>
-                    <r.icon size={20} color={form.role === r.value ? 'var(--gold)' : 'var(--muted)'} />
+                    <r.icon size={20} color={form.role === r.value ? GOLD : MUTED} />
                   </div>
-                    <p style={{ margin: 0, fontSize: '11px', fontWeight: '700', color: form.role === r.value ? 'var(--gold)' : 'var(--text)' }}>{r.label}</p>
+                    <p style={{ margin: 0, fontSize: '11px', fontWeight: '700', color: form.role === r.value ? GOLD : TEXT }}>{r.label}</p>
                     <p style={{ margin: 0, fontSize: '10px', color: 'var(--muted)' }}>{r.sub}</p>
                   </button>
                 ))}

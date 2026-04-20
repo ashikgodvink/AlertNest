@@ -74,7 +74,7 @@ export default function Login({ onSwitch }) {
       <div style={{ flex: 1, background: 'var(--bg-card)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px' }}>
 
         {/* Tab switcher */}
-        <div style={{ display: 'flex', background: 'var(--bg-input)', borderRadius: '8px', padding: '4px', marginBottom: '36px', width: '100%', maxWidth: '360px' }}>
+        <div style={{ display: 'flex', background: '#0a2218', borderRadius: '8px', padding: '4px', marginBottom: '36px', width: '100%', maxWidth: '360px' }}>
           <button style={{ flex: 1, padding: '10px', borderRadius: '6px', border: 'none', cursor: 'default', background: 'var(--gold)', color: '#fff', fontWeight: '700', fontSize: '13px', letterSpacing: '0.5px' }}>SIGN IN</button>
           <button onClick={onSwitch} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: 'none', cursor: 'pointer', background: 'transparent', color: 'var(--muted)', fontWeight: '600', fontSize: '13px', letterSpacing: '0.5px' }}>SIGN UP</button>
         </div>

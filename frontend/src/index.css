@@ -1,3 +1,158 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+*, *::before, *::after {
+  border-radius: 0 !important;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* ── Theme Variables ── */
+:root {
+  --bg-dark: #0d2b1f;
+  --bg-card: #112d20;
+  --bg-input: #0a2218;
+  --gold: #c8873a;
+  --gold-hover: #b5762e;
+  --text: #e8e0d0;
+  --muted: #7a9e8a;
+  --border: #1e4030;
+  --grid-color: rgba(200,121,65,0.1);
+  --glow-1: rgba(200,121,65,0.1);
+  --glow-2: rgba(14,100,50,0.14);
+}
+
+[data-theme="light"] {
+  --bg-dark: #f8f9fa;
+  --bg-card: #ffffff;
+  --bg-input: #f1f3f5;
+  --gold: #d97706;
+  --gold-hover: #b45309;
+  --text: #1f2937;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+  --grid-color: rgba(217,119,6,0.08);
+  --glow-1: rgba(217,119,6,0.06);
+  --glow-2: rgba(59,130,246,0.08);
+}
+
+body {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg-dark);
+  color: var(--text);
+  overflow-x: hidden;
+  position: relative;
+  transition: background 0.3s, color 0.3s;
+}
+
+/* ── Grid lines — on body so they cover EVERYTHING ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--grid-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none;
+  z-index: 9998;
+  transition: background-image 0.3s;
+}
+
+/* ── Noise texture — on body ── */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9997;
+}
+
+/* ── Radial glows ── */
+.dash-glow {
+  position: fixed;
+  width: 800px;
+  height: 800px;
+  background: radial-gradient(circle, var(--glow-1) 0%, transparent 65%);
+  top: -250px;
+  right: -250px;
+  pointer-events: none;
+  z-index: 1;
+  animation: pulseGlow 8s ease-in-out infinite alternate;
+  transition: background 0.3s;
+}
+
+.dash-glow-2 {
+  position: fixed;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, var(--glow-2) 0%, transparent 70%);
+  bottom: -150px;
+  left: 80px;
+  pointer-events: none;
+  z-index: 1;
+  animation: pulseGlow 12s ease-in-out infinite alternate-reverse;
+  transition: background 0.3s;
+}
+
+@keyframes pulseGlow {
+  0%   { opacity: 0.5; transform: scale(1); }
+  100% { opacity: 1;   transform: scale(1.15); }
+}
+
+/* ── Floating arcs ── */
+.dash-arc {
+  position: fixed;
+  border: 1px solid var(--grid-color);
+  pointer-events: none;
+  z-index: 1;
+  animation: floatArc 20s ease-in-out infinite;
+  transition: border-color 0.3s;
+}
+
+@keyframes floatArc {
+  0%, 100% { transform: translate(0, 0); }
+  50%      { transform: translate(16px, -20px); }
+}
+
+/* ── Report form fields ── */
+.report-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.report-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.report-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 300;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  padding: 4px 0;
+  width: 100%;
+  letter-spacing: 0.02em;
+  transition: color 0.3s;
+}
+
+.report-input::placeholder { color: var(--muted); opacity: 0.4; }
+.report-input:focus { border-bottom: 1px solid var(--gold); margin-bottom: -1px; }

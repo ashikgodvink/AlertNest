@@ -8,6 +8,19 @@ from app.routes.dashboard import router as dashboard_router
 from app.routes.google_auth import router as google_auth_router
 from app.routes.forgot_password import router as forgot_password_router
 from app.routes.users import router as users_router
+import firebase_admin
+from firebase_admin import credentials
+import os
+import json
+
+# Initialize Firebase Admin SDK
+firebase_creds_path = os.path.join(os.path.dirname(__file__), 'firebase-service-account.json')
+
+if os.path.exists(firebase_creds_path):
+    cred = credentials.Certificate(firebase_creds_path)
+    firebase_admin.initialize_app(cred)
+else:
+    print("Warning: firebase-service-account.json not found. Firebase Admin SDK not initialized.")
 
 
 @asynccontextmanager

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from app.database import get_db
 from app.utils.auth import get_current_user
 
@@ -25,68 +25,72 @@ def compute_summary(incidents: list) -> dict:
 
 @router.get("/summary")
 async def get_summary(current_user: dict = Depends(get_current_user)):
-    db   = get_db()
+    db = get_db()
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database unavailable")
     role = current_user.get("role", "student")
     uid  = current_user["uid"]
+    incidents_collection = db.incidents
 
     if role == "admin":
         # admin sees everything
-        docs = db.collection("incidents").get()
-        incidents = [d.to_dict() for d in docs]
+        incidents = list(incidents_collection.find({}))
 
     elif role == "staff":
         # staff sees own + assigned
-        own      = db.collection("incidents").where("reported_by", "==", uid).get()
-        assigned = db.collection("incidents").where("assigned_to", "==", uid).get()
+        own      = list(incidents_collection.find({"reported_by": uid}))
+        assigned = list(incidents_collection.find({"assigned_to": uid}))
         seen, incidents = set(), []
-        for d in list(own) + list(assigned):
-            if d.id not in seen:
-                seen.add(d.id)
-                incidents.append(d.to_dict())
+        for doc in own + assigned:
+            doc_id = str(doc["_id"])
+            if doc_id not in seen:
+                seen.add(doc_id)
+                incidents.append(doc)
 
     else:
         # student sees only their own
-        docs = db.collection("incidents").where("reported_by", "==", uid).get()
-        incidents = [d.to_dict() for d in docs]
+        incidents = list(incidents_collection.find({"reported_by": uid}))
 
     return compute_summary(incidents)
 
 @router.get("/recent")
 async def get_recent(current_user: dict = Depends(get_current_user)):
-    db   = get_db()
+    db = get_db()
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database unavailable")
     role = current_user.get("role", "student")
     uid  = current_user["uid"]
+    incidents_collection = db.incidents
 
     if role == "admin":
-        # Fetch all, sort in Python — avoids needing a Firestore composite index
-        docs = db.collection("incidents").get()
-        all_docs = list(docs)
+        # Fetch all
+        all_docs = list(incidents_collection.find({}))
 
     elif role == "staff":
-        own      = db.collection("incidents").where("reported_by", "==", uid).get()
-        assigned = db.collection("incidents").where("assigned_to", "==", uid).get()
+        own      = list(incidents_collection.find({"reported_by": uid}))
+        assigned = list(incidents_collection.find({"assigned_to": uid}))
         seen, all_docs = set(), []
-        for d in list(own) + list(assigned):
-            if d.id not in seen:
-                seen.add(d.id)
-                all_docs.append(d)
+        for doc in own + assigned:
+            doc_id = str(doc["_id"])
+            if doc_id not in seen:
+                seen.add(doc_id)
+                all_docs.append(doc)
 
     else:
-        docs = db.collection("incidents").where("reported_by", "==", uid).get()
-        all_docs = list(docs)
+        all_docs = list(incidents_collection.find({"reported_by": uid}))
 
-    # Sort by created_at descending in Python — no composite index needed
-    all_docs.sort(key=lambda d: d.to_dict().get("created_at", ""), reverse=True)
+    # Sort by created_at descending
+    all_docs.sort(key=lambda d: d.get("created_at", ""), reverse=True)
     recent = all_docs[:5]
 
     return {
         "incidents": [{
-            "id": d.id,
-            "title": d.to_dict().get("title"),
-            "category": d.to_dict().get("category"),
-            "severity": d.to_dict().get("severity"),
-            "status": d.to_dict().get("status"),
-            "location": d.to_dict().get("location", ""),
-            "created_at": d.to_dict().get("created_at"),
+            "id": str(d["_id"]),
+            "title": d.get("title"),
+            "category": d.get("category"),
+            "severity": d.get("severity"),
+            "status": d.get("status"),
+            "location": d.get("location", ""),
+            "created_at": d.get("created_at"),
         } for d in recent]
     }

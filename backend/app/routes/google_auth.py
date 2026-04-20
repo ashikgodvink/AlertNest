@@ -14,21 +14,22 @@ class GoogleSyncData(BaseModel):
 async def google_sync(body: GoogleSyncData):
     """
     Called after Firebase Google sign-in on the frontend.
-    Creates the user doc in Firestore if it doesn't exist.
+    Creates the user doc in MongoDB if it doesn't exist.
     """
     db = get_db()
-    user_ref = db.collection("users").document(body.uid)
-    doc = user_ref.get()
+    users_collection = db.users
+    existing_user = users_collection.find_one({"_id": body.uid})
 
-    if not doc.exists:
-        user_ref.set({
+    if not existing_user:
+        users_collection.insert_one({
+            "_id": body.uid,
             "name": body.name or body.email,
             "email": body.email,
             "role": body.role,
             "provider": "google"
         })
 
-    user = user_ref.get().to_dict()
+    user = users_collection.find_one({"_id": body.uid})
     return {
         "user": {
             "id": body.uid,

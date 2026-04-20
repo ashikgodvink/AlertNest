@@ -6,17 +6,19 @@ bearer_scheme = HTTPBearer()
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)):
     """
-    Verifies the Firebase ID token and attaches the user's role from Firestore.
-    NOTE: makes one Firestore read per request to fetch the role.
-    This is acceptable for current scale; add caching (e.g. Redis) if needed later.
+    Verifies the Firebase ID token and attaches the user's role from MongoDB.
     """
     token = credentials.credentials
     try:
         decoded = firebase_auth.verify_id_token(token)
         from app.database import get_db
         db = get_db()
-        user_doc = db.collection("users").document(decoded["uid"]).get()
-        decoded["role"] = user_doc.to_dict().get("role", "student") if user_doc.exists else "student"
+        if db is not None:
+            user_doc = db.users.find_one({"_id": decoded["uid"]})
+            decoded["role"] = user_doc.get("role", "student") if user_doc else "student"
+        else:
+            decoded["role"] = "student"
         return decoded
-    except Exception:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
+    except Exception as e:
+        print(f"Auth error: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Invalid or expired token: {str(e)}")
