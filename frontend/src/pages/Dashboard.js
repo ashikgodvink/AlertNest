@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { getDashboardSummary, getIncidents, createIncident, updateStatus, assignIncident, deleteIncident, getUsers, updateUserRole, deleteUser } from '../services/api';
+import { getDashboardSummary, updateStatus, assignIncident, deleteIncident, getUsers, updateUserRole, deleteUser } from '../services/api';
 import api from '../services/api';
 import Sidebar from '../components/Sidebar';
 import StatCard from '../components/StatCard';
@@ -12,9 +12,8 @@ import Toast from '../components/Toast';
 import ConfirmModal from '../components/ConfirmModal';
 import IncidentDetailModal from '../components/IncidentDetailModal';
 import Profile from './Profile';
-import { FaClipboardList, FaSync, FaCheckCircle, FaTrash, FaSearch, FaMapMarkerAlt, FaFilter, FaSave, FaTimes, FaSort, FaImage, FaVideo, FaPlus } from 'react-icons/fa';
+import { FaClipboardList, FaSync, FaCheckCircle, FaTrash, FaSearch, FaMapMarkerAlt, FaFilter, FaSave, FaImage, FaVideo } from 'react-icons/fa';
 import { COLORS } from '../utils/colors';
-
 const PAGE_SIZE = 8;
 
 function timeAgo(isoString) {
@@ -444,24 +443,6 @@ export default function Dashboard() {
     });
   };
 
-  // Export incidents
-  const handleExport = async (format = 'csv') => {
-    try {
-      const response = await api.get(`/api/incidents/export?format=${format}`, {
-        responseType: 'blob',
-      });
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `incidents.${format}`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      showToast('Export successful', 'success');
-    } catch {
-      showToast('Failed to export', 'error');
-    }
-  };
 
   // Save current filter
   const handleSaveFilter = async () => {
