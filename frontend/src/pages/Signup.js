@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import SocialButtons from '../components/SocialButtons';
-import { FaLeaf, FaGraduationCap, FaTools, FaCrown, FaEye, FaEyeSlash } from 'react-icons/fa';
+import { FaLeaf, FaGraduationCap, FaTools, FaEye, FaEyeSlash } from 'react-icons/fa';
 import { COLORS } from '../utils/colors';
 
 export default function Signup({ onSwitch }) {
@@ -37,7 +37,6 @@ export default function Signup({ onSwitch }) {
   const ROLES = [
     { value: 'student', icon: FaGraduationCap, label: 'Student', sub: 'Report incidents' },
     { value: 'staff',   icon: FaTools,  label: 'Staff',   sub: 'Manage & resolve' },
-    { value: 'admin',   icon: FaCrown,  label: 'Admin',   sub: 'Full access' },
   ];
 
   return (
@@ -91,7 +90,7 @@ export default function Signup({ onSwitch }) {
             {/* Role selector */}
             <div>
               <label style={label}>I am a</label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
                 {ROLES.map(r => (
                   <button key={r.value} type="button" onClick={() => setForm({ ...form, role: r.value })} style={{
                     padding: '12px 8px', borderRadius: '8px', border: form.role === r.value ? '1px solid var(--gold)' : '1px solid var(--border)',
