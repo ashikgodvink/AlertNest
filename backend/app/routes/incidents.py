@@ -226,7 +226,7 @@ async def delete_saved_filter(filter_id: str, current_user: dict = Depends(get_c
 # ── DYNAMIC ROUTES (/{incident_id} must come AFTER all static routes) ──
 
 @router.get("/{incident_id}/media/{media_id}")
-async def get_media(incident_id: str, media_id: str, current_user: dict = Depends(get_current_user)):
+async def get_media(incident_id: str, media_id: str):
     db = get_db()
     from fastapi.responses import Response
     try:
