@@ -4,9 +4,9 @@ import SocialButtons from '../components/SocialButtons';
 import { FaLeaf, FaGraduationCap, FaTools, FaCrown, FaEye, FaEyeSlash } from 'react-icons/fa';
 
 const DOMAIN_MAP = {
-  student: '@student.alertnest.edu',
-  staff:   '@staff.alertnest.edu',
-  admin:   '@admin.alertnest.edu',
+  admin:   '@admin.university.edu',
+  student: '@student.campus.edu',
+  staff:   '@staff.university.edu',
 };
 
 export default function Signup({ onSwitch }) {
@@ -30,7 +30,7 @@ export default function Signup({ onSwitch }) {
     // Validate email domain matches selected role
     const expectedDomain = DOMAIN_MAP[form.role];
     if (!form.email.toLowerCase().endsWith(expectedDomain)) {
-      setError(`${form.role.charAt(0).toUpperCase() + form.role.slice(1)} accounts require an institutional email ending with ${expectedDomain}`);
+      setError(`Invalid email for ${form.role} account. Please use your institutional email.`);
       setLoading(false);
       return;
     }

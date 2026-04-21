@@ -7,15 +7,15 @@ from app.utils.auth import get_current_user
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 # ── Email domain rules ──────────────────────────────────────────────────────
-STUDENT_DOMAIN = "@student.alertnest.edu"
-STAFF_DOMAIN   = "@staff.alertnest.edu"
-ADMIN_DOMAIN   = "@admin.alertnest.edu"
+ADMIN_DOMAIN   = "@admin.university.edu"
+STUDENT_DOMAIN = "@student.campus.edu"
+STAFF_DOMAIN   = "@staff.university.edu"
 
 def get_role_from_email(email: str) -> str:
     e = email.lower()
     if e.endswith(ADMIN_DOMAIN):   return "admin"
-    if e.endswith(STAFF_DOMAIN):   return "staff"
     if e.endswith(STUDENT_DOMAIN): return "student"
+    if e.endswith(STAFF_DOMAIN):   return "staff"
     return None
 
 class SyncData(BaseModel):
@@ -27,15 +27,9 @@ async def sync_user(data: SyncData = SyncData(), current_user: dict = Depends(ge
     db = get_db()
     if db is None:
         raise HTTPException(status_code=503, detail="Database unavailable")
+
     uid   = current_user["uid"]
     email = current_user.get("email", "")
-
-    role_from_email = get_role_from_email(email)
-    if role_from_email is None:
-        raise HTTPException(
-            status_code=403,
-            detail="Invalid email domain. Please use your institution email to sign up."
-        )
 
     provider = "email"
     if "firebase" in current_user and "sign_in_provider" in current_user.get("firebase", {}):
@@ -45,6 +39,13 @@ async def sync_user(data: SyncData = SyncData(), current_user: dict = Depends(ge
     existing_user = users_collection.find_one({"_id": uid})
 
     if not existing_user:
+        # New user — enforce domain
+        role_from_email = get_role_from_email(email)
+        if role_from_email is None:
+            raise HTTPException(
+                status_code=403,
+                detail="Invalid email domain. Please use your institution email to sign up."
+            )
         users_collection.insert_one({
             "_id": uid,
             "name": data.name or current_user.get("name", email),
@@ -53,10 +54,12 @@ async def sync_user(data: SyncData = SyncData(), current_user: dict = Depends(ge
             "provider": provider
         })
     else:
-        updates = {"role": role_from_email}
+        # Existing user — never change their role, just update name if provided
+        updates = {}
         if data.name and data.name != existing_user.get("name"):
             updates["name"] = data.name
-        users_collection.update_one({"_id": uid}, {"$set": updates})
+        if updates:
+            users_collection.update_one({"_id": uid}, {"$set": updates})
 
     user = users_collection.find_one({"_id": uid})
     return {

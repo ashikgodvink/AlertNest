@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { getDashboardSummary, updateStatus, assignIncident, deleteIncident, getUsers, updateUserRole, deleteUser } from '../services/api';
+import { getDashboardSummary, updateStatus, assignIncident, reassignIncident, deleteIncident, getUsers, updateUserRole, deleteUser } from '../services/api';
 import api from '../services/api';
 import Sidebar from '../components/Sidebar';
 import StatCard from '../components/StatCard';
@@ -13,7 +13,6 @@ import ConfirmModal from '../components/ConfirmModal';
 import IncidentDetailModal from '../components/IncidentDetailModal';
 import Profile from './Profile';
 import { FaClipboardList, FaSync, FaCheckCircle, FaTrash, FaSearch, FaMapMarkerAlt, FaFilter, FaSave, FaImage, FaVideo } from 'react-icons/fa';
-import { COLORS } from '../utils/colors';
 const PAGE_SIZE = 8;
 
 function timeAgo(isoString) {
@@ -236,7 +235,9 @@ export default function Dashboard() {
   const [submitting, setSubmitting]   = useState(false);
   const [formError, setFormError]     = useState('');
   const [assignInput, setAssignInput] = useState({});
+  const [reassignInput, setReassignInput] = useState({});
   const [users, setUsers]             = useState([]);
+  const [staffMembers, setStaffMembers] = useState([]);
   const [roleInput, setRoleInput]     = useState({});
 
   // loading states
@@ -315,11 +316,14 @@ export default function Dashboard() {
     if (role === 'admin') {
       setLoadingUsers(true);
       getUsers()
-        .then(r => setUsers(r.data.users || []))
+        .then(r => {
+          const allUsers = r.data.users || [];
+          setUsers(allUsers);
+          setStaffMembers(allUsers.filter(u => u.role === 'staff'));
+        })
         .catch(() => showToast('Failed to load users', 'error'))
         .finally(() => setLoadingUsers(false));
     }
-
     // Load saved filters
     api.get('/api/incidents/filters')
       .then(r => setSavedFilters(r.data.filters || []))
@@ -327,6 +331,19 @@ export default function Dashboard() {
   }, [role, filterStatus, filterSeverity, dateFrom, dateTo, assignedTo, sortBy, sortOrder]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Load staff members immediately for admin (so dropdown is ready)
+  useEffect(() => {
+    if (role === 'admin') {
+      getUsers()
+        .then(r => {
+          const allUsers = r.data.users || [];
+          setUsers(allUsers);
+          setStaffMembers(allUsers.filter(u => u.role === 'staff'));
+        })
+        .catch(() => {});
+    }
+  }, [role]);
 
   // reset page when filters change
   useEffect(() => { setPage(1); }, [filterStatus, filterSeverity, searchQuery, dateFrom, dateTo, assignedTo, sortBy, sortOrder]);
@@ -388,14 +405,29 @@ export default function Dashboard() {
   };
 
   const handleAssign = async (id) => {
-    const dept = assignInput[id];
-    if (!dept?.trim()) return;
+    const staffId = assignInput[id];
+    if (!staffId) return;
     try {
-      await assignIncident(id, { assigned_to: dept.trim() });
+      await assignIncident(id, { assigned_to: staffId });
       setAssignInput(p => ({ ...p, [id]: '' }));
-      showToast('Incident assigned', 'success');
+      showToast('Incident assigned to staff', 'success');
       load();
-    } catch { showToast('Failed to assign', 'error'); }
+    } catch (err) {
+      showToast(err?.response?.data?.detail || 'Failed to assign', 'error');
+    }
+  };
+
+  const handleReassign = async (id) => {
+    const staffId = reassignInput[id];
+    if (!staffId) return;
+    try {
+      await reassignIncident(id, { assigned_to: staffId });
+      setReassignInput(p => ({ ...p, [id]: '' }));
+      showToast('Incident reassigned', 'success');
+      load();
+    } catch (err) {
+      showToast(err?.response?.data?.detail || 'Failed to reassign', 'error');
+    }
   };
 
   const handleUpdateRole = async (userId) => {
@@ -522,7 +554,7 @@ export default function Dashboard() {
     }
   };
 
-  const navItems = ['Dashboard', 'Incidents', 'Reports', ...(role === 'admin' ? ['Users'] : []), 'Settings'];
+  const navItems = ['Dashboard', 'Incidents', 'Reports', ...(role === 'admin' ? ['Assignments', 'Users'] : []), 'Settings'];
   const badge = ROLE_BADGE[role] || ROLE_BADGE.student;
 
   return (
@@ -636,7 +668,6 @@ export default function Dashboard() {
                             {[
                               { label: 'View All Incidents', action: () => setActive('Incidents'), color: 'var(--gold)' },
                               { label: 'Manage Users', action: () => setActive('Users'), color: '#6ee7b7' },
-                              { label: 'Settings', action: () => setActive('Settings'), color: '#93c5fd' },
                             ].map(a => (
                               <button key={a.label} onClick={a.action} style={{
                                 padding: '12px 16px', background: 'var(--bg-dark)', border: `1px solid var(--border)`,
@@ -669,8 +700,8 @@ export default function Dashboard() {
                     <>
                       {/* Staff stats - their assigned work */}
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1px', background: 'var(--border)', border: `1px solid var(--border)`, marginBottom: '24px' }}>
-                        <StatCard label="Assigned to Me" value={summary?.in_progress} subtitle="Need attention" icon={<FaSync size={16} />} trend="down" />
-                        <StatCard label="Resolved by Me" value={summary?.resolved} subtitle="Completed" icon={<FaCheckCircle size={16} />} />
+                        <StatCard label="Assigned to Me" value={incidents.filter(i => i.assigned_to && i.status !== 'resolved').length} subtitle="Need attention" icon={<FaSync size={16} />} trend="down" />
+                        <StatCard label="Resolved by Me" value={incidents.filter(i => i.status === 'resolved').length} subtitle="Completed" icon={<FaCheckCircle size={16} />} />
                         <StatCard label="Total in System" value={summary?.total} subtitle="All incidents" icon={<FaClipboardList size={16} />} />
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1px', background: 'var(--border)', border: `1px solid var(--border)` }}>
@@ -681,27 +712,31 @@ export default function Dashboard() {
                             <button onClick={() => setActive('Incidents')} style={{ background: 'transparent', border: 'none', color: 'var(--gold)', fontSize: '11px', cursor: 'pointer' }}>View All →</button>
                           </div>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', background: 'var(--border)' }}>
-                            {recent.filter(i => i.assigned_to === user?.id).length === 0
-                              ? <p style={{ fontSize: '12px', color: 'var(--muted)', margin: 0, padding: '12px', background: 'var(--bg-dark)' }}>No incidents assigned yet</p>
-                              : recent.filter(i => i.assigned_to === user?.id).map(inc => (
-                                <div key={inc.id} style={{ padding: '12px 14px', background: 'var(--bg-dark)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                  <div>
-                                    <p style={{ margin: 0, fontSize: '12px', fontWeight: '600', color: 'var(--text)' }}>{inc.title}</p>
-                                    <p style={{ margin: '2px 0 0', fontSize: '11px', color: 'var(--muted)' }}>{inc.location} · {timeAgo(inc.created_at)}</p>
+                            {incidents.filter(i => i.assigned_to).length === 0
+                              ? <p style={{ fontSize: '12px', color: 'var(--muted)', margin: 0, padding: '12px', background: 'var(--bg-dark)' }}>No incidents assigned to you yet</p>
+                              : incidents.filter(i => i.assigned_to).slice(0, 5).map(inc => (
+                                <div key={inc.id} style={{ padding: '12px 14px', background: 'var(--bg-dark)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                      <p style={{ margin: 0, fontSize: '12px', fontWeight: '600', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{inc.title}</p>
+                                      {inc.status === 'in_progress' && (
+                                        <span style={{ fontSize: '8px', fontWeight: '700', padding: '2px 6px', borderRadius: '10px', background: 'rgba(200,135,58,0.2)', color: '#c8873a', flexShrink: 0 }}>NEW</span>
+                                      )}
+                                    </div>
+                                    <p style={{ margin: '2px 0 0', fontSize: '11px', color: 'var(--muted)' }}>{inc.category} · {timeAgo(inc.created_at)}</p>
                                   </div>
-                                  <span style={{ fontSize: '9px', fontWeight: '600', padding: '2px 7px', borderRadius: '10px', background: 'rgba(200,135,58,0.15)', color: '#c8873a' }}>{inc.status?.replace('_', ' ')}</span>
+                                  {inc.status !== 'resolved' ? (
+                                    <button onClick={() => handleStatusChange(inc.id, 'resolved')} style={{
+                                      background: 'rgba(110,231,183,0.1)', border: '1px solid rgba(110,231,183,0.3)',
+                                      borderRadius: '6px', color: '#6ee7b7', fontSize: '10px', fontWeight: '600',
+                                      padding: '4px 10px', cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap',
+                                    }}>✓ Mark Resolved</button>
+                                  ) : (
+                                    <span style={{ fontSize: '9px', fontWeight: '600', padding: '2px 7px', borderRadius: '10px', background: 'rgba(110,231,183,0.15)', color: '#6ee7b7', flexShrink: 0 }}>Resolved</span>
+                                  )}
                                 </div>
                               ))
                             }
-                            {/* Show all recent if none assigned */}
-                            {recent.filter(i => i.assigned_to === user?.id).length === 0 && recent.slice(0, 4).map(inc => (
-                              <div key={inc.id} style={{ padding: '12px 14px', background: 'var(--bg-dark)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div>
-                                  <p style={{ margin: 0, fontSize: '12px', fontWeight: '600', color: 'var(--text)' }}>{inc.title}</p>
-                                  <p style={{ margin: '2px 0 0', fontSize: '11px', color: 'var(--muted)' }}>{inc.category} · {timeAgo(inc.created_at)}</p>
-                                </div>
-                              </div>
-                            ))}
                           </div>
                         </div>
                         {/* Staff quick actions */}
@@ -710,7 +745,6 @@ export default function Dashboard() {
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                             {[
                               { label: 'My Assigned Work', action: () => setActive('Incidents'), color: '#6ee7b7' },
-                              { label: 'Settings', action: () => setActive('Settings'), color: '#93c5fd' },
                             ].map(a => (
                               <button key={a.label} onClick={a.action} style={{
                                 padding: '12px 16px', background: 'var(--bg-dark)', border: `1px solid var(--border)`,
@@ -786,21 +820,20 @@ export default function Dashboard() {
                           </div>
                         </div>
                         {/* Student info panel */}
-                        <div style={{ background: 'var(--bg-card)', padding: '22px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                          <p style={{ margin: 0, fontSize: '10px', fontWeight: '600', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--muted)' }}>How It Works</p>
-                          {[
-                            { step: '1', text: 'Report an incident with details and photos', color: '#93c5fd' },
-                            { step: '2', text: 'Admin reviews and assigns it to staff', color: '#c8873a' },
-                            { step: '3', text: 'Staff resolves the issue', color: '#6ee7b7' },
-                          ].map(s => (
-                            <div key={s.step} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-                              <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: `${s.color}20`, border: `1px solid ${s.color}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                <span style={{ fontSize: '10px', fontWeight: '700', color: s.color }}>{s.step}</span>
-                              </div>
-                              <p style={{ margin: 0, fontSize: '11px', color: 'var(--muted)', lineHeight: 1.5 }}>{s.text}</p>
-                            </div>
-                          ))}
-                          <button onClick={() => setActive('Reports')} style={{ ...btnGold, padding: '10px', fontSize: '11px', borderRadius: '8px', marginTop: '8px', textAlign: 'center' }}>
+                        {/* Student motivational panel */}
+                        <div style={{ background: 'var(--bg-card)', padding: '28px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px', textAlign: 'center' }}>
+                          <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: 'rgba(200,135,58,0.12)', border: '1px solid rgba(200,135,58,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <FaClipboardList size={24} style={{ color: 'var(--gold)' }} />
+                          </div>
+                          <div>
+                            <h3 style={{ margin: '0 0 8px', fontSize: '18px', fontWeight: '600', color: 'var(--text)', lineHeight: 1.3 }}>
+                              Report your incidents to get them resolved at the earliest
+                            </h3>
+                            <p style={{ margin: 0, fontSize: '12px', color: 'var(--muted)', lineHeight: 1.6 }}>
+                              Every report matters. Your submission helps keep the campus safe and ensures issues are handled promptly.
+                            </p>
+                          </div>
+                          <button onClick={() => setActive('Reports')} style={{ ...btnGold, padding: '12px 28px', fontSize: '12px', borderRadius: '8px' }}>
                             + Report New Incident
                           </button>
                         </div>
@@ -1073,10 +1106,10 @@ export default function Dashboard() {
                           background: isSelected ? 'rgba(200,135,58,0.08)' : 'var(--bg-card)',
                           border: `1px solid ${isSelected ? 'var(--gold)' : 'var(--border)'}`,
                           borderRadius: '14px',
-                          padding: '18px 20px',
+                          padding: '22px 24px',
                           display: 'flex',
                           flexDirection: 'column',
-                          gap: '12px',
+                          gap: '14px',
                           transition: 'border-color 0.2s, transform 0.15s',
                           borderLeft: `3px solid ${sevColor}`,
                           cursor: 'pointer',
@@ -1099,7 +1132,7 @@ export default function Dashboard() {
                                 style={{ cursor: 'pointer', flexShrink: 0, marginTop: '2px' }}
                               />
                             )}
-                            <p style={{ margin: 0, fontSize: '14px', fontWeight: '600', color: 'var(--text)', lineHeight: 1.4, flex: 1 }}>{i.title}</p>
+                            <p style={{ margin: 0, fontSize: '15px', fontWeight: '700', color: 'var(--text)', lineHeight: 1.4, flex: 1 }}>{i.title}</p>
                             {(role === 'admin' || (role === 'student' && i.reported_by === user?.id && i.status === 'reported')) && (
                               <button onClick={(e) => { e.stopPropagation(); handleDeleteIncident(i.id); }}
                                 style={{ background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.2)', borderRadius: '6px', color: 'rgba(248,113,113,0.5)', cursor: 'pointer', padding: '4px 7px', display: 'flex', alignItems: 'center', flexShrink: 0 }}
@@ -1122,25 +1155,29 @@ export default function Dashboard() {
                               {i.status?.replace('_', ' ')}
                             </span>
                             {/* Category */}
-                            <span style={{ fontSize: '11px', color: 'var(--muted)', marginLeft: 'auto' }}>{i.category}</span>
+                            <span style={{ fontSize: '12px', fontWeight: '500', color: 'var(--muted)', marginLeft: 'auto' }}>{i.category}</span>
                           </div>
 
                           {/* Location + time */}
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: 'var(--muted)', opacity: 0.8 }}><FaMapMarkerAlt size={10} /> {i.location || '—'}</span>
-                            <span style={{ fontSize: '10px', color: 'var(--muted)', opacity: 0.6 }}>{timeAgo(i.created_at)}</span>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: '500', color: 'var(--muted)' }}><FaMapMarkerAlt size={11} /> {i.location || '—'}</span>
+                            <span style={{ fontSize: '11px', fontWeight: '500', color: 'var(--muted)' }}>{timeAgo(i.created_at)}</span>
                           </div>
 
-                          {/* Assigned to (student view) */}
-                          {role === 'student' && i.assigned_to && (
-                            <p style={{ margin: 0, fontSize: '10px', color: 'var(--muted)', padding: '6px 10px', background: 'rgba(200,135,58,0.06)', borderRadius: '6px', border: `1px solid rgba(200,135,58,0.12)` }}>
-                              Assigned to: <span style={{ color: 'var(--gold)' }}>{i.assigned_to}</span>
-                            </p>
+                          {/* Assigned to (student view) — shows status updates clearly */}
+                          {role === 'student' && i.assigned_to && (Array.isArray(i.assigned_to) ? i.assigned_to.length > 0 : true) && (
+                            <div style={{ padding: '8px 10px', background: 'rgba(200,135,58,0.06)', borderRadius: '6px', border: `1px solid rgba(200,135,58,0.12)` }}>
+                              <p style={{ margin: '0 0 4px', fontSize: '10px', fontWeight: '600', color: 'var(--gold)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Being Handled</p>
+                              <p style={{ margin: 0, fontSize: '11px', color: 'var(--muted)' }}>
+                                Your incident has been assigned to staff and is {i.status === 'resolved' ? 'resolved ✓' : 'in progress'}
+                              </p>
+                            </div>
                           )}
 
                           {/* Admin controls */}
                           {role === 'admin' && (
                             <div onClick={(e) => e.stopPropagation()} style={{ borderTop: `1px solid rgba(200,121,65,0.1)`, paddingTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                              {/* Status buttons */}
                               <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                                 {['reported', 'in_progress', 'resolved'].map(s => (
                                   <button key={s} onClick={() => handleStatusChange(i.id, s)} style={{
@@ -1153,11 +1190,43 @@ export default function Dashboard() {
                                   </button>
                                 ))}
                               </div>
-                              <div style={{ display: 'flex', gap: '6px' }}>
-                                <input placeholder="Assign to UID" value={assignInput[i.id] || ''} onChange={e => setAssignInput(p => ({ ...p, [i.id]: e.target.value }))}
-                                  style={{ flex: 1, border: 'none', borderBottom: `1px solid var(--border)`, padding: '4px 0', fontSize: '11px', background: 'transparent', outline: 'none', color: 'var(--text)' }} />
-                                <button onClick={() => handleAssign(i.id)} style={{ ...btnGold, padding: '4px 12px', fontSize: '10px', borderRadius: '6px' }}>Assign</button>
-                              </div>
+
+                              {/* Currently assigned — show as tags */}
+                              {i.assigned_to && (Array.isArray(i.assigned_to) ? i.assigned_to : [i.assigned_to]).length > 0 && (
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                  {(Array.isArray(i.assigned_to) ? i.assigned_to : [i.assigned_to]).map(uid => (
+                                    <span key={uid} style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '10px', background: 'rgba(200,135,58,0.12)', color: 'var(--gold)', border: '1px solid rgba(200,135,58,0.2)' }}>
+                                      {staffMembers.find(s => s.id === uid)?.name || uid}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+
+                              {/* Assign staff — shows all staff, prevents duplicates */}
+                              {(() => {
+                                const currentAssignees = Array.isArray(i.assigned_to) ? i.assigned_to : (i.assigned_to ? [i.assigned_to] : []);
+                                return (
+                                  <div style={{ display: 'flex', gap: '6px' }}>
+                                    <select
+                                      value={assignInput[i.id] || ''}
+                                      onChange={e => setAssignInput(p => ({ ...p, [i.id]: e.target.value }))}
+                                      style={{ flex: 1, border: '1px solid var(--border)', borderRadius: '6px', padding: '5px 8px', fontSize: '11px', background: 'var(--bg-input)', color: 'var(--text)', outline: 'none' }}>
+                                      <option value="">{staffMembers.length === 0 ? 'No staff found' : 'Add staff member...'}</option>
+                                      {staffMembers.map(s => (
+                                        <option key={s.id} value={s.id} disabled={currentAssignees.includes(s.id)}>
+                                          {s.name || s.email}{currentAssignees.includes(s.id) ? ' (already assigned)' : ''}
+                                        </option>
+                                      ))}
+                                    </select>
+                                    <button
+                                      onClick={() => handleAssign(i.id)}
+                                      disabled={!assignInput[i.id]}
+                                      style={{ ...btnGold, padding: '5px 12px', fontSize: '10px', borderRadius: '6px', opacity: assignInput[i.id] ? 1 : 0.4, cursor: assignInput[i.id] ? 'pointer' : 'default' }}>
+                                      Assign
+                                    </button>
+                                  </div>
+                                );
+                              })()}
                             </div>
                           )}
 
@@ -1308,10 +1377,136 @@ export default function Dashboard() {
             </div>
           )}
 
+          {/* ── ASSIGNMENTS (admin only) ── */}
+          {active === 'Assignments' && role === 'admin' && (
+            <div>
+              <div style={{ marginBottom: '28px', paddingBottom: '20px', borderBottom: `1px solid var(--border)` }}>
+                <p style={{ margin: '0 0 6px', fontSize: '10px', fontWeight: '600', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--muted)' }}>Admin Panel</p>
+                <h2 style={{ margin: 0, fontSize: '28px', fontWeight: '400', color: 'var(--text)', letterSpacing: '0.05em', fontFamily: "'Oswald', sans-serif" }}>Staff Assignments</h2>
+              </div>
+
+              {/* Summary cards per staff */}
+              {staffMembers.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '60px 20px', background: 'var(--bg-card)', borderRadius: '16px', border: `1px solid var(--border)` }}>
+                  <p style={{ fontSize: '14px', color: 'var(--muted)', margin: 0 }}>No staff members found</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  {staffMembers.map(staff => {
+                    // Handle both string and array assigned_to
+                    const staffIncidents = incidents.filter(i => {
+                      const at = i.assigned_to;
+                      if (!at) return false;
+                      if (Array.isArray(at)) return at.includes(staff.id);
+                      return at === staff.id;
+                    });
+                    const resolved = staffIncidents.filter(i => i.status === 'resolved');
+                    const pending  = staffIncidents.filter(i => i.status !== 'resolved');
+
+                    return (
+                      <div key={staff.id} style={{ background: 'var(--bg-card)', border: `1px solid var(--border)`, borderRadius: '16px', overflow: 'hidden' }}>
+                        {/* Staff header */}
+                        <div style={{ padding: '20px 28px', borderBottom: `1px solid var(--border)`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(200,135,58,0.04)' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--gold)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: '700', fontSize: '16px' }}>
+                              {staff.name?.[0]?.toUpperCase() || 'S'}
+                            </div>
+                            <div>
+                              <p style={{ margin: 0, fontSize: '15px', fontWeight: '700', color: 'var(--text)' }}>{staff.name}</p>
+                              <p style={{ margin: 0, fontSize: '12px', fontWeight: '500', color: 'var(--muted)' }}>{staff.email}</p>
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                            <div style={{ textAlign: 'center' }}>
+                              <p style={{ margin: 0, fontSize: '20px', fontWeight: '700', color: 'var(--gold)' }}>{staffIncidents.length}</p>
+                              <p style={{ margin: 0, fontSize: '10px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Total</p>
+                            </div>
+                            <div style={{ textAlign: 'center' }}>
+                              <p style={{ margin: 0, fontSize: '20px', fontWeight: '700', color: '#c8873a' }}>{pending.length}</p>
+                              <p style={{ margin: 0, fontSize: '10px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Pending</p>
+                            </div>
+                            <div style={{ textAlign: 'center' }}>
+                              <p style={{ margin: 0, fontSize: '20px', fontWeight: '700', color: '#6ee7b7' }}>{resolved.length}</p>
+                              <p style={{ margin: 0, fontSize: '10px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Resolved</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Incidents list */}
+                        {staffIncidents.length === 0 ? (
+                          <p style={{ padding: '16px 24px', margin: 0, fontSize: '12px', color: 'var(--muted)', fontStyle: 'italic' }}>No incidents assigned</p>
+                        ) : (
+                          <div>
+                            {/* Pending */}
+                            {pending.length > 0 && (
+                              <div>
+                                <p style={{ margin: 0, padding: '10px 24px', fontSize: '10px', fontWeight: '700', color: '#c8873a', letterSpacing: '0.1em', textTransform: 'uppercase', background: 'rgba(200,135,58,0.04)', borderBottom: `1px solid var(--border)` }}>
+                                  Pending ({pending.length})
+                                </p>
+                                {pending.map(inc => (
+                                  <div key={inc.id} style={{ padding: '18px 28px', borderBottom: `1px solid var(--border)`, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px' }}>
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                      <p style={{ margin: 0, fontSize: '14px', fontWeight: '700', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{inc.title}</p>
+                                      <p style={{ margin: '5px 0 10px', fontSize: '12px', fontWeight: '500', color: 'var(--muted)' }}>{inc.category} · {inc.location} · {timeAgo(inc.created_at)}</p>
+                                      {/* Reassign option */}
+                                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                                        <select
+                                          value={reassignInput[inc.id] || ''}
+                                          onChange={e => setReassignInput(p => ({ ...p, [inc.id]: e.target.value }))}
+                                          style={{ border: '1px solid var(--border)', borderRadius: '6px', padding: '3px 8px', fontSize: '10px', background: 'var(--bg-input)', color: 'var(--text)', outline: 'none' }}>
+                                          <option value="">↺ Reassign to...</option>
+                                          {staffMembers.filter(s => s.id !== staff.id).map(s => (
+                                            <option key={s.id} value={s.id}>{s.name}</option>
+                                          ))}
+                                        </select>
+                                        <button
+                                          onClick={() => handleReassign(inc.id)}
+                                          disabled={!reassignInput[inc.id]}
+                                          style={{ ...btnGold, padding: '3px 10px', fontSize: '10px', borderRadius: '6px', opacity: reassignInput[inc.id] ? 1 : 0.4, cursor: reassignInput[inc.id] ? 'pointer' : 'default' }}>
+                                          Reassign
+                                        </button>
+                                      </div>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
+                                      <span style={{ fontSize: '9px', fontWeight: '600', padding: '3px 8px', borderRadius: '10px', background: inc.severity === 'high' ? 'rgba(248,113,113,0.15)' : inc.severity === 'medium' ? 'rgba(200,135,58,0.15)' : 'rgba(110,231,183,0.15)', color: inc.severity === 'high' ? '#f87171' : inc.severity === 'medium' ? '#c8873a' : '#6ee7b7' }}>{inc.severity}</span>
+                                      <span style={{ fontSize: '9px', fontWeight: '600', padding: '3px 8px', borderRadius: '10px', background: 'rgba(200,135,58,0.15)', color: '#c8873a' }}>{inc.status.replace('_', ' ')}</span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Resolved */}
+                            {resolved.length > 0 && (
+                              <div>
+                                <p style={{ margin: 0, padding: '10px 24px', fontSize: '10px', fontWeight: '700', color: '#6ee7b7', letterSpacing: '0.1em', textTransform: 'uppercase', background: 'rgba(110,231,183,0.04)', borderBottom: `1px solid var(--border)` }}>
+                                  Resolved ({resolved.length})
+                                </p>
+                                {resolved.map(inc => (
+                                  <div key={inc.id} style={{ padding: '18px 28px', borderBottom: `1px solid var(--border)`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                      <p style={{ margin: 0, fontSize: '14px', fontWeight: '700', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{inc.title}</p>
+                                      <p style={{ margin: '5px 0 0', fontSize: '12px', fontWeight: '500', color: 'var(--muted)' }}>{inc.category} · {inc.location} · {timeAgo(inc.created_at)}</p>
+                                    </div>
+                                    <span style={{ fontSize: '9px', fontWeight: '600', padding: '3px 8px', borderRadius: '10px', background: 'rgba(110,231,183,0.15)', color: '#6ee7b7', flexShrink: 0 }}>✓ Resolved</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* ── USERS (admin only) ── */}
           {active === 'Users' && role === 'admin' && (
-            <div style={{ background: 'var(--bg-card)', borderRadius: '16px', padding: '24px 26px', border: `1px solid var(--border)` }}>
-              <p style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text)', margin: '0 0 18px' }}>User Management</p>
+            <div style={{ background: 'var(--bg-card)', borderRadius: '16px', padding: '28px 30px', border: `1px solid var(--border)` }}>
+              <p style={{ fontSize: '17px', fontWeight: '700', color: 'var(--text)', margin: '0 0 20px' }}>User Management</p>
               {loadingUsers ? (
                 <div style={{ padding: '20px 0' }}>
                   <div style={{ height: '60px', background: 'var(--border)', borderRadius: '10px', marginBottom: '10px', animation: 'pulse 1.5s ease-in-out infinite' }} />
@@ -1320,23 +1515,23 @@ export default function Dashboard() {
                   <style>{`@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }`}</style>
                 </div>
               ) : users.length === 0
-                ? <p style={{ fontSize: '13px', color: 'var(--muted)' }}>No users found.</p>
+                ? <p style={{ fontSize: '14px', fontWeight: '500', color: 'var(--muted)' }}>No users found.</p>
                 : users.map(u => (
-                  <div key={u.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderRadius: '10px', background: 'var(--bg-dark)', marginBottom: '10px', border: `1px solid var(--border)`, flexWrap: 'wrap', gap: '10px' }}>
+                  <div key={u.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderRadius: '10px', background: 'var(--bg-dark)', marginBottom: '12px', border: `1px solid var(--border)`, flexWrap: 'wrap', gap: '10px' }}>
                     <div>
-                      <p style={{ margin: 0, fontSize: '13px', fontWeight: '600', color: 'var(--text)' }}>{u.name || '—'}</p>
-                      <p style={{ margin: '2px 0 0', fontSize: '11px', color: 'var(--muted)' }}>{u.email}</p>
+                      <p style={{ margin: 0, fontSize: '14px', fontWeight: '700', color: 'var(--text)' }}>{u.name || '—'}</p>
+                      <p style={{ margin: '3px 0 0', fontSize: '12px', fontWeight: '500', color: 'var(--muted)' }}>{u.email}</p>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '11px', fontWeight: '600', padding: '3px 10px', borderRadius: '20px', background: ROLE_BADGE[u.role]?.bg || '#ddd', color: ROLE_BADGE[u.role]?.color || '#333', textTransform: 'capitalize' }}>{u.role}</span>
+                      <span style={{ fontSize: '11px', fontWeight: '700', padding: '3px 10px', borderRadius: '20px', background: ROLE_BADGE[u.role]?.bg || '#ddd', color: ROLE_BADGE[u.role]?.color || '#333', textTransform: 'capitalize' }}>{u.role}</span>
                       <select value={roleInput[u.id] || ''} onChange={e => setRoleInput(p => ({ ...p, [u.id]: e.target.value }))}
-                        style={{ border: `1px solid var(--border)`, borderRadius: '6px', padding: '4px 8px', fontSize: '11px', background: 'var(--bg-input)', color: 'var(--text)', outline: 'none' }}>
+                        style={{ border: `1px solid var(--border)`, borderRadius: '6px', padding: '4px 8px', fontSize: '12px', background: 'var(--bg-input)', color: 'var(--text)', outline: 'none' }}>
                         <option value="">Change role</option>
                         <option value="student">Student</option>
                         <option value="staff">Staff</option>
                         <option value="admin">Admin</option>
                       </select>
-                      <button onClick={() => handleUpdateRole(u.id)} style={{ ...btnGold, padding: '4px 12px', fontSize: '11px' }}>Save</button>
+                      <button onClick={() => handleUpdateRole(u.id)} style={{ ...btnGold, padding: '4px 12px', fontSize: '12px' }}>Save</button>
                       <button onClick={() => handleDeleteUser(u.id)} style={{ background: 'rgba(248,113,113,0.15)', color: '#f87171', border: '1px solid rgba(248,113,113,0.3)', borderRadius: '6px', padding: '4px 10px', fontSize: '11px', cursor: 'pointer' }}>
                         <FaTrash size={11} />
                       </button>

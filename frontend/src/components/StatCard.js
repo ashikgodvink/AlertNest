@@ -15,12 +15,12 @@ export default function StatCard({ label, value, subtitle, icon, trend = 'up' })
       onMouseLeave={e => e.currentTarget.style.background = 'var(--bg-dark)'}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <span style={{ fontSize: '10px', fontWeight: '600', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--muted)' }}>{label}</span>
+        <span style={{ fontSize: '11px', fontWeight: '700', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--muted)' }}>{label}</span>
         {icon && <span style={{ color: 'var(--gold)', opacity: 0.7 }}>{icon}</span>}
       </div>
       <div>
-        <p style={{ margin: '12px 0 6px', fontSize: '36px', fontWeight: '300', color: 'var(--text)', lineHeight: 1, letterSpacing: '-1px' }}>{value ?? '—'}</p>
-        <p style={{ margin: 0, fontSize: '11px', color: trend === 'down' ? '#f87171' : 'var(--gold)', letterSpacing: '0.05em' }}>
+        <p style={{ margin: '12px 0 6px', fontSize: '36px', fontWeight: '400', color: 'var(--text)', lineHeight: 1, letterSpacing: '-1px' }}>{value ?? '—'}</p>
+        <p style={{ margin: 0, fontSize: '12px', fontWeight: '500', color: trend === 'down' ? '#f87171' : 'var(--gold)', letterSpacing: '0.05em' }}>
           {trend === 'down' ? '↓' : '↑'} {subtitle}
         </p>
       </div>

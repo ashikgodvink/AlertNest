@@ -26,6 +26,7 @@ export const getIncident = (id) => api.get(`/api/incidents/${id}`);
 export const createIncident = (data) => api.post('/api/incidents', data);
 export const updateStatus = (id, data) => api.put(`/api/incidents/${id}/status`, data);
 export const assignIncident = (id, data) => api.put(`/api/incidents/${id}/assign`, data);
+export const reassignIncident = (id, data) => api.put(`/api/incidents/${id}/reassign`, data);
 export const deleteIncident = (id) => api.delete(`/api/incidents/${id}`);
 
 export const getUsers = () => api.get('/api/users');

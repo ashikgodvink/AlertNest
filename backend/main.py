@@ -1,5 +1,5 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import connect_db, close_db
 from app.routes.auth import router as auth_router
@@ -8,10 +8,10 @@ from app.routes.dashboard import router as dashboard_router
 from app.routes.google_auth import router as google_auth_router
 from app.routes.forgot_password import router as forgot_password_router
 from app.routes.users import router as users_router
+from app.utils.auth import get_current_user
 import firebase_admin
 from firebase_admin import credentials
 import os
-import json
 
 # Initialize Firebase Admin SDK
 firebase_creds_path = os.path.join(os.path.dirname(__file__), 'firebase-service-account.json')

@@ -1,5 +1,3 @@
-import { COLORS } from '../utils/colors';
-
 export default function ProgressChart({ pct = 0, onViewAll }) {
   const r = 44, circ = 2 * Math.PI * r;
   const dash = (Math.min(pct, 100) / 100) * circ;

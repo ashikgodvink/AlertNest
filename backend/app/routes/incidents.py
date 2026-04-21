@@ -131,7 +131,7 @@ async def get_incidents(
         incidents = list(db.incidents.find({}))
     elif role == "staff":
         own      = list(db.incidents.find({"reported_by": uid}))
-        assigned = list(db.incidents.find({"assigned_to": uid}))
+        assigned = list(db.incidents.find({"assigned_to": uid}))  # matches both string and array
         seen, incidents = set(), []
         for doc in own + assigned:
             key = str(doc["_id"])
@@ -140,7 +140,6 @@ async def get_incidents(
                 incidents.append(doc)
     else:  # student
         incidents = list(db.incidents.find({"reported_by": uid}))
-
     result = []
     for inc in incidents:
         inc["id"] = str(inc["_id"])
@@ -277,10 +276,46 @@ async def assign_incident(incident_id: str, data: AssignUpdate, current_user: di
     require_admin(current_user)
     db = get_db()
     try:
+        incident = db.incidents.find_one({"_id": ObjectId(incident_id)})
+    except Exception:
+        raise HTTPException(status_code=404, detail="Incident not found")
+
+    if not incident:
+        raise HTTPException(status_code=404, detail="Incident not found")
+
+    # Get current assignees (support both old string and new array format)
+    current_assignees = incident.get("assigned_to", [])
+    if isinstance(current_assignees, str):
+        current_assignees = [current_assignees] if current_assignees else []
+    if current_assignees is None:
+        current_assignees = []
+
+    # Don't assign same staff twice
+    if data.assigned_to in current_assignees:
+        raise HTTPException(status_code=400, detail="This staff member is already assigned to this incident")
+
+    current_assignees.append(data.assigned_to)
+
+    db.incidents.update_one(
+        {"_id": ObjectId(incident_id)},
+        {"$set": {
+            "assigned_to": current_assignees,
+            "status": "in_progress",
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }}
+    )
+    return {"message": "Incident assigned"}
+
+@router.put("/{incident_id}/reassign")
+async def reassign_incident(incident_id: str, data: AssignUpdate, current_user: dict = Depends(get_current_user)):
+    """Replace all assignees with a single new staff member"""
+    require_admin(current_user)
+    db = get_db()
+    try:
         result = db.incidents.update_one(
             {"_id": ObjectId(incident_id)},
             {"$set": {
-                "assigned_to": data.assigned_to,
+                "assigned_to": [data.assigned_to],
                 "status": "in_progress",
                 "updated_at": datetime.now(timezone.utc).isoformat(),
             }}
@@ -291,7 +326,7 @@ async def assign_incident(incident_id: str, data: AssignUpdate, current_user: di
         raise
     except:
         raise HTTPException(status_code=404, detail="Incident not found")
-    return {"message": "Incident assigned"}
+    return {"message": "Incident reassigned"}
 
 # ── Update status ────────────────────────────────────────────────────────────
 # WHO: admin can set any status
@@ -322,7 +357,10 @@ async def update_status(incident_id: str, data: StatusUpdate, current_user: dict
         pass
     elif role == "staff":
         # Staff can only update incidents assigned to them
-        if incident.get("assigned_to") != uid:
+        assignees = incident.get("assigned_to", [])
+        if isinstance(assignees, str):
+            assignees = [assignees]
+        if uid not in assignees:
             raise HTTPException(status_code=403, detail="You can only update incidents assigned to you")
         # Staff can only set in_progress or resolved (not revert to reported)
         if data.status == "reported":

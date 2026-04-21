@@ -59,10 +59,11 @@ export const AuthProvider = ({ children }) => {
     const cred = await createUserWithEmailAndPassword(auth, email, password);
     await updateProfile(cred.user, { displayName: name });
     const token = await cred.user.getIdToken();
-    // Store extra info (name, role) in backend/Firestore
-    await api.post('/api/auth/sync', { name, role }, {
+    const res = await api.post('/api/auth/sync', { name, role }, {
       headers: { Authorization: `Bearer ${token}` }
     });
+    // Set user immediately after registration — no need to login again
+    setUser({ ...res.data.user, token });
   };
 
   const loginWithGoogle = async () => {

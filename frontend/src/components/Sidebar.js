@@ -1,11 +1,12 @@
-import { FaThLarge, FaExclamationTriangle, FaFileAlt, FaUsers, FaCog, FaLeaf, FaHeadset } from 'react-icons/fa';
+import { FaThLarge, FaExclamationTriangle, FaFileAlt, FaUsers, FaCog, FaLeaf, FaHeadset, FaTasks } from 'react-icons/fa';
 
 const ALL_NAV = [
-  { label: 'Dashboard', icon: FaThLarge },
-  { label: 'Incidents', icon: FaExclamationTriangle },
-  { label: 'Reports',   icon: FaFileAlt },
-  { label: 'Users',     icon: FaUsers },
-  { label: 'Settings',  icon: FaCog },
+  { label: 'Dashboard',   icon: FaThLarge },
+  { label: 'Incidents',   icon: FaExclamationTriangle },
+  { label: 'Reports',     icon: FaFileAlt },
+  { label: 'Assignments', icon: FaTasks },
+  { label: 'Users',       icon: FaUsers },
+  { label: 'Settings',    icon: FaCog },
 ];
 
 export default function Sidebar({ active, onNav, onLogout, navItems }) {
